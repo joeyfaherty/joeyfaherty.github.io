@@ -6,24 +6,27 @@ comments: true
 
 
 
-[Spark Structured Streaming](https://spark.apache.org/docs/latest/structured-streaming-programming-guide.html) () allows us to perform aggregations 
-
-> over a sliding event-time window in a straightforward manner
+[Spark Structured Streaming](https://spark.apache.org/docs/latest/structured-streaming-programming-guide.html) allows us to perform aggregations  over a sliding event-time window in a straightforward manner
  
 out of the box using  [windowing operation on event time](https://spark.apache.org/docs/latest/structured-streaming-programming-guide.html#window-operations-on-event-time) and [watermarking](https://spark.apache.org/docs/latest/structured-streaming-programming-guide.html#handling-late-data-and-watermarking).  
 
 ## Use case
-* Continue to sum the wins of a user for the duration of the session, and when there is a deposit event in the stream, deposit the current balance and close the session. 
+
+> Continue to sum the wins of a user for the duration of the session, and when there is a deposit event in the stream, deposit the current balance and close the session. 
+
+## Windowing and watermarking
 
 Windowing and watermarking by default work with time based windows.  In our use case this does not work as we want to close the session when we get a signal to deposit the current balance.
+
+## Result
 
 We can achieve this by implementing a custom session window based on the mapGroupsWithState function
 
 
 
-
 ### Step 0: Define the Custom session classes
-```dbn-psql
+
+```
   case class Transaction(sessionId: String, winAmount: Double, deposit: Boolean)
 
   case class SessionTrackingValue(totalSum: Double)
@@ -34,7 +37,7 @@ We can achieve this by implementing a custom session window based on the mapGrou
   
 ### Create a local SparkSession running locally utilizing all cores
 
-```dbn-psql
+```
 val spark: SparkSession = SparkSession
   .builder
   .master("local[*]")
@@ -43,7 +46,8 @@ val spark: SparkSession = SparkSession
 ```
 
 ### Create a socket stream bound to port 9999 on localhost
-```dbn-psql
+
+```
 val socketStream: DataFrame = spark.readStream
   // socket as stream input
   .format("socket")
@@ -55,7 +59,7 @@ val socketStream: DataFrame = spark.readStream
 
 ### Map the input to a Transaction case class
 
-```dbn-psql
+```
 import spark.implicits._
     
     val transactions = socketStream
@@ -115,7 +119,7 @@ TODO: explain
 
 ### Run the app
 
-```dbn-psql
+```
     val query: StreamingQuery = sessionUpdates
       .writeStream
       .outputMode("update")
