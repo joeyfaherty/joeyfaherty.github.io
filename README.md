@@ -1,1 +1,1 @@
-This is my tech blog site [joeyfaherty.github.io](https://joeyfaherty.github.io), hosted by [GitHub Pages](http://pages.github.com).
+My tech blog site [joeyfaherty.github.io](https://joeyfaherty.github.io).
