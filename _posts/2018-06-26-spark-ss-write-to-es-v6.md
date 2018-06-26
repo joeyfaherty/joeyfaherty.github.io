@@ -1,34 +1,43 @@
+---
+layout: post
+title: Spark Structured Streaming - Writing to Elasticsearch (6.x) + Docker 
+comments: true
+---
+
 Spark Structured Streaming - Writing to Elasticsearch 6.x
 
-If you are using the version of Elasticsearch 6.x or above, writing to it in Spark Structured Sreaming is relatively straightforward.
+If you are using the version of Elasticsearch 6.x or above, writing to it in `Spark Structured Sreaming` is relatively straightforward.
 
 Unlike previous versions like 5.x where you have to implement a custom sink to be able to write to Elasticsearch, version 6.x comes with Spark Structured Streaming support out of the box.
 
 Dependencies required:
-        <dependency>
-            <groupId>org.elasticsearch</groupId>
-            <artifactId>elasticsearch-spark-20_2.11</artifactId>
-            <version>6.2.4</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-core_${scala.main}</artifactId>
-            <version>${spark.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-sql_${scala.main}</artifactId>
-            <version>${spark.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-streaming_${scala.main}</artifactId>
-            <version>${spark.version}</version>
-        </dependency>
+```
+    <dependency>
+        <groupId>org.elasticsearch</groupId>
+        <artifactId>elasticsearch-spark-20_2.11</artifactId>
+        <version>6.2.4</version>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.spark</groupId>
+        <artifactId>spark-core_${scala.main}</artifactId>
+        <version>2.3.1</version>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.spark</groupId>
+        <artifactId>spark-sql_${scala.main}</artifactId>
+        <version>2.3.1</version>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.spark</groupId>
+        <artifactId>spark-streaming_${scala.main}</artifactId>
+        <version>2.3.1</version>
+    </dependency>
+```
 
 
 Then it is as simple as;
-1 - Create the SparkSession with the Elasticsearch configuration
+
+## 1. Create the `SparkSession` with the Elasticsearch configuration
 ```
 val spark = SparkSession
   .builder
@@ -44,7 +53,7 @@ val spark = SparkSession
   .getOrCreate()
 ```
 
-read from your socket source:
+## 2. Read from your socket source:
 ```
 import spark.implicits._
 
@@ -64,7 +73,7 @@ val customerEvents: Dataset[Customer] = spark
   })
 ```
 
-write to Elasticsearch sink:
+## 3. Write to Elasticsearch sink:
 ```
 customerEvents
   .writeStream
@@ -77,8 +86,8 @@ customerEvents
   .awaitTermination()
 ```
 
-Full code:
+### Full code:
 [Github](https://github.com/joeyfaherty/es6writer/blob/master/src/main/scala/com/joeyfaherty/spark/structured/streaming/ESWriter6.scala)
 
-Advanced:
+### Advanced:
 If you want to see events being updated in real-time from your local machine to a Elasticsearch docker instance, follow the steps in the readme file on GIT.
