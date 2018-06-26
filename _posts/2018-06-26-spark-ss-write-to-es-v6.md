@@ -53,7 +53,7 @@ val spark = SparkSession
   .getOrCreate()
 ```
 
-## 2. Read from your socket source:
+## 2. Read csv input from your socket source:
 ```
 import spark.implicits._
 
@@ -90,4 +90,4 @@ customerEvents
 [Github](https://github.com/joeyfaherty/es6writer/blob/master/src/main/scala/com/joeyfaherty/spark/structured/streaming/ESWriter6.scala)
 
 ### Advanced:
-If you want to see events being updated in real-time from your local machine to a Elasticsearch docker instance, follow the steps in the readme file on GIT.
+If you want to see events being updated in real-time from your local machine to a Elasticsearch docker instance, follow the steps in the [readme file](https://github.com/joeyfaherty/es6writer/blob/master/readme.md).
