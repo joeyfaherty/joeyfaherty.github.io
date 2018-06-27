@@ -4,6 +4,6 @@ title: About
 ---
 
 <p class="message">
-   I will try to create a new entry each month on big data related technology.
+   A place for notes on big data tech..
 </p>
 
