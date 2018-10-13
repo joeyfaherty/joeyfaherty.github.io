@@ -4,6 +4,6 @@ title: About
 ---
 
 <p class="message">
-   A place for notes on big data tech..
+   Big Data Technology blog.
 </p>
 
