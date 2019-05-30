@@ -73,10 +73,10 @@ I have added a `ddl.sql` file in `src/universal/ddl` and a `runner.sh` script in
     ls -R src/universal/
     ddl	runner
     
-    src/universal//ddl:
+    src/universal/ddl:
     ddl.sql
     
-    src/universal//runner:
+    src/universal/runner:
     runner.sh
     ```
 
@@ -94,7 +94,7 @@ I have added a `ddl.sql` file in `src/universal/ddl` and a `runner.sh` script in
         case (file, name) => !name.endsWith(".jar")
       }
     
-      // now add the fat jar
+      // add the fat jar
       filtered :+ (fatJar -> ("lib/" + fatJar.getName))
     }
     ```
@@ -107,8 +107,6 @@ I have added a `ddl.sql` file in `src/universal/ddl` and a `runner.sh` script in
     // enables the archive to be packaged
     enablePlugins(UniversalDeployPlugin)
     
-    // these release steps are executed in sequence when the below command is run:
-    // sbt "release with-defaults"
     releaseProcess := {
       Seq[ReleaseStep](
         // clean target directories 
