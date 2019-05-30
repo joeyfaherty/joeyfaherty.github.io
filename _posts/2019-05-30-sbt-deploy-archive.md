@@ -4,7 +4,7 @@ title: Package and Deploy an artifact using SBT
 comments: true
 ---
 
-> For full code go to https://github.com/joeyfaherty/sbt-deployer
+> For full code go to [https://github.com/joeyfaherty/sbt-deployer]()
 
 #### Problem:
 - In a multi-module project, I want to be able to publish to artifactory a fat jar of my application, runner scripts and database scripts.
@@ -22,7 +22,7 @@ This example uses sbt version `1.2.8`
 
 1. Add the following plugins to `plugins.sbt`
 
-    ```sbtshell
+    ```scala
     addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.3.21")
     addSbtPlugin("com.github.gseitz" % "sbt-release" % "1.0.11")
     addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.14.9")
@@ -31,13 +31,13 @@ This example uses sbt version `1.2.8`
 2. Define your repository to publish to. (In this case I use a local dummy repo as I dont have an artifactory set up. `build.sbt`
 )
 
-    ```sbtshell
+    ```scala
     publishTo := Some(Resolver.file("file", new File("/tmp/my/artifactory")))
     ```
 
 3. Simple multi-module set up with a root project and 3 subprojects. `build.sbt`
 
-    ```sbtshell
+    ```scala
     lazy val root = Project(
       id = "root",
       base = file("."),
@@ -81,7 +81,7 @@ I have added a `ddl.sql` file in `src/universal/ddl` and a `runner.sh` script in
     ```
 
 5. Where the fat jar packaging magic happens. `build.sbt`
-    ```sbtshell
+    ```scala
     import com.typesafe.sbt.SbtNativePackager._
     
     mappings in Universal := {
