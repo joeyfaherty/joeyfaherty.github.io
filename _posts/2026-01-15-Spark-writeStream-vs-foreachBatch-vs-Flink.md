@@ -76,7 +76,7 @@ Spark Structured Streaming is — at its core — a **micro-batch engine**. Each
 5. Commits offsets to the **checkpoint directory**
 6. Repeats
 
-<div class="mermaid">
+<div class="mermaid" markdown="0">
 flowchart TD
     A["⏱️ Trigger Fires"] --> B["Read New Offsets from Source"]
     B --> C["Construct Micro-Batch DataFrame"]
@@ -124,7 +124,7 @@ Streaming Query = Source → Transformations → Sink
 
 **Each streaming query goes through this entire pipeline independently.** Even if two queries share the exact same source and transformations in your Scala/Python code, Spark does not detect or exploit that overlap.
 
-<div class="mermaid">
+<div class="mermaid" markdown="0">
 flowchart TD
     subgraph Query1["Streaming Query 1 — request_logs"]
         S1["Kafka Source"] --> P1["Parse JSON"] --> T1["Flatten Event"] --> W1["Write to request_logs"]
@@ -192,7 +192,7 @@ Despite sharing the `val enriched` reference in your Scala code, **the JVM objec
 
 When `q1.start()` is called, Spark walks the DataFrame lineage from `enriched` back to the Kafka source and constructs a complete, independent plan. When `q2.start()` is called, it does the exact same thing — a second complete plan rooted at the same Kafka source. And again for `q3`.
 
-<div class="mermaid">
+<div class="mermaid" markdown="0">
 flowchart LR
     subgraph Cluster["Spark Cluster — 3x Resource Consumption"]
         direction TB
@@ -338,7 +338,7 @@ raw.writeStream
 
 Inside `foreachBatch`, the `batchDF` is a **static (batch) DataFrame** — not a streaming DataFrame. This changes everything:
 
-<div class="mermaid">
+<div class="mermaid" markdown="0">
 flowchart TD
     K["📥 Kafka Read — ONCE per micro-batch"] --> P["Parse JSON — ONCE"]
     P --> E["Flatten & Enrich — ONCE"]
@@ -397,7 +397,7 @@ Flink processes data as a **continuous dataflow graph**. There are no micro-batc
 - A single operator's output can be **routed to multiple downstream operators**
 - **No re-reading of the source** is required for fan-out — it is a simple edge split in the DAG
 
-<div class="mermaid">
+<div class="mermaid" markdown="0">
 flowchart LR
     K["📥 Kafka Source\n(read ONCE)"] --> P["Parse JSON\n(ONCE per record)"]
     P --> R["Route / Split"]
@@ -460,7 +460,7 @@ Flink achieves exactly-once semantics through **distributed snapshots** based on
 
 #### Checkpoint Barrier Flow
 
-<div class="mermaid">
+<div class="mermaid" markdown="0">
 flowchart LR
     JM["🎛️ JobManager\n(Checkpoint Coordinator)"] -->|"inject barrier"| KS["📥 Kafka Source"]
     KS -->|"barrier flows with data"| P["Parse Operator"]
@@ -519,7 +519,7 @@ Apache Iceberg is a natural companion to Flink for multi-sink streaming. Here's 
 
 Flink's Iceberg sink implements a **two-phase commit protocol** tied to Flink's checkpointing:
 
-<div class="mermaid">
+<div class="mermaid" markdown="0">
 sequenceDiagram
     participant JM as JobManager
     participant W as Flink Sink Writer
@@ -601,7 +601,7 @@ Multiple `INSERT INTO` statements from the same parsed source in a single Flink 
 
 If you are committed to Spark, the recommended production architecture is:
 
-<div class="mermaid">
+<div class="mermaid" markdown="0">
 flowchart TD
     K["📥 Kafka Consumer Group\n(single read)"] --> FB["foreachBatch\n(per micro-batch trigger)"]
 
@@ -639,7 +639,7 @@ flowchart TD
 
 ## When to Choose What
 
-<div class="mermaid">
+<div class="mermaid" markdown="0">
 flowchart TD
     Start["Multi-Sink Streaming\nRequirement"] --> Q1{"Existing Spark\ninfrastructure?"}
 
