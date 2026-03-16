@@ -76,7 +76,7 @@ Spark Structured Streaming is — at its core — a **micro-batch engine**. Each
 5. Commits offsets to the **checkpoint directory**
 6. Repeats
 
-```mermaid
+<pre class="mermaid">
 flowchart TD
     A["Trigger Fires"] --> B["Read New Offsets from Source"]
     B --> C["Construct Micro-Batch DataFrame"]
@@ -86,7 +86,7 @@ flowchart TD
     F --> G["Execute Spark Job on Executors"]
     G --> H["Commit Offsets to Checkpoint"]
     H --> A
-```
+</pre>
 
 ### The Critical Design Point
 
@@ -124,7 +124,7 @@ Streaming Query = Source -> Transformations -> Sink
 
 **Each streaming query goes through this entire pipeline independently.** Even if two queries share the exact same source and transformations in your Scala/Python code, Spark does not detect or exploit that overlap.
 
-```mermaid
+<pre class="mermaid">
 flowchart TD
     subgraph Query1["Streaming Query 1 - request_logs"]
         S1["Kafka Source"] --> P1["Parse JSON"] --> T1["Flatten Event"] --> W1["Write to request_logs"]
@@ -135,7 +135,7 @@ flowchart TD
     subgraph Query3["Streaming Query 3 - performance_metrics"]
         S3["Kafka Source"] --> P3["Parse JSON"] --> T3["Flatten Event"] --> W3["Write to performance_metrics"]
     end
-```
+</pre>
 
 Three queries. Three full DAGs. **Three reads from Kafka. Three JSON parse passes. Three flatten operations.** The upstream computation is fully duplicated.
 
@@ -190,7 +190,7 @@ Despite sharing the `val enriched` reference in your Scala code, **the JVM objec
 
 When `q1.start()` is called, Spark walks the DataFrame lineage from `enriched` back to the Kafka source and constructs a complete, independent plan. When `q2.start()` is called, it does the exact same thing — a second complete plan rooted at the same Kafka source. And again for `q3`.
 
-```mermaid
+<pre class="mermaid">
 flowchart LR
     subgraph Cluster["Spark Cluster - 3x Resource Consumption"]
         direction TB
@@ -204,7 +204,7 @@ flowchart LR
             K3["Kafka Read 3"] --> P3["Parse JSON 3"] --> F3["Flatten 3"] --> S3["perf_metrics"]
         end
     end
-```
+</pre>
 
 **The result:**
 
@@ -336,7 +336,7 @@ raw.writeStream
 
 Inside `foreachBatch`, the `batchDF` is a **static (batch) DataFrame** — not a streaming DataFrame. This changes everything:
 
-```mermaid
+<pre class="mermaid">
 flowchart TD
     K["Kafka Read - ONCE per micro-batch"] --> P["Parse JSON - ONCE"]
     P --> E["Flatten and Enrich - ONCE"]
@@ -345,7 +345,7 @@ flowchart TD
     Cache --> W2["Write error_events"]
     Cache --> W3["Write perf_metrics"]
     W3 --> Un["unpersist"]
-```
+</pre>
 
 | Benefit                    | Detail                                                       |
 |----------------------------|--------------------------------------------------------------|
@@ -393,14 +393,14 @@ Flink processes data as a **continuous dataflow graph**. There are no micro-batc
 - A single operator's output can be **routed to multiple downstream operators**
 - **No re-reading of the source** is required for fan-out — it is a simple edge split in the DAG
 
-```mermaid
+<pre class="mermaid">
 flowchart LR
     K["Kafka Source - read ONCE"] --> P["Parse JSON - ONCE per record"]
     P --> R["Route / Split"]
     R -->|"request fields"| S1["Iceberg: request_logs"]
     R -->|"error fields"| S2["Iceberg: error_events"]
     R -->|"perf fields"| S3["Iceberg: performance_metrics"]
-```
+</pre>
 
 ### Flink Code: Side Outputs for Fan-Out
 
@@ -455,7 +455,7 @@ Flink achieves exactly-once semantics through **distributed snapshots** based on
 
 #### Checkpoint Barrier Flow
 
-```mermaid
+<pre class="mermaid">
 flowchart LR
     JM["JobManager - Checkpoint Coordinator"] -->|"inject barrier"| KS["Kafka Source"]
     KS -->|"barrier flows with data"| P["Parse Operator"]
@@ -466,7 +466,7 @@ flowchart LR
     S1 -->|"ack"| JM
     S2 -->|"ack"| JM
     S3 -->|"ack"| JM
-```
+</pre>
 
 The process works as follows:
 
@@ -513,7 +513,7 @@ Apache Iceberg is a natural companion to Flink for multi-sink streaming. Here's 
 
 Flink's Iceberg sink implements a **two-phase commit protocol** tied to Flink's checkpointing:
 
-```mermaid
+<pre class="mermaid">
 sequenceDiagram
     participant JM as JobManager
     participant W as Flink Sink Writer
@@ -521,12 +521,12 @@ sequenceDiagram
     JM->>W: Checkpoint Barrier arrives
     W->>W: Flush current data files to storage
     W->>W: Record file metadata
-    W-->>JM: Acknowledge barrier (pre-commit)
+    W-->>JM: Acknowledge barrier pre-commit
     JM->>JM: All operators acknowledged
     JM->>W: Notify checkpoint complete
-    W->>IC: Commit snapshot (atomic metadata swap)
+    W->>IC: Commit snapshot atomic metadata swap
     IC-->>W: Commit confirmed
-```
+</pre>
 
 1. **During normal processing**, the Flink Iceberg writer buffers records and writes Parquet/ORC data files to object storage
 2. **On checkpoint barrier**, the writer flushes all pending data files and records their metadata — but does **not** commit to the Iceberg catalog yet
@@ -592,7 +592,7 @@ Multiple `INSERT INTO` statements from the same parsed source in a single Flink 
 
 If you are committed to Spark, the recommended production architecture is:
 
-```mermaid
+<pre class="mermaid">
 flowchart TD
     K["Kafka Consumer Group - single read"] --> FB["foreachBatch - per micro-batch trigger"]
     FB --> Parse["Parse JSON / Avro - ONCE"]
@@ -602,7 +602,7 @@ flowchart TD
     Persist --> W2["Delta Lake: error_events"]
     Persist --> W3["Delta Lake: performance_metrics"]
     W3 --> UP["unpersist"]
-```
+</pre>
 
 **Key implementation details:**
 
@@ -624,16 +624,16 @@ flowchart TD
 
 ## When to Choose What
 
-```mermaid
+<pre class="mermaid">
 flowchart TD
     Start["Multi-Sink Streaming Requirement"] --> Q1{"Existing Spark infrastructure?"}
     Q1 -->|"Yes"| Q2{"Latency requirement?"}
-    Q1 -->|"No / Greenfield"| Flink["Apache Flink - Native fan-out, ms latency, Global exactly-once"]
-    Q2 -->|"Seconds OK"| FBatch["Spark foreachBatch - Single read, Parallel writes, Per-sink idempotence"]
+    Q1 -->|"No / Greenfield"| Flink["Apache Flink - Native fan-out, ms latency"]
+    Q2 -->|"Seconds OK"| FBatch["Spark foreachBatch - Single read, Parallel writes"]
     Q2 -->|"Sub-second needed"| Q3{"Can invest in Flink ops?"}
     Q3 -->|"Yes"| Flink
-    Q3 -->|"No"| FBatch2["Spark foreachBatch with short trigger intervals"]
-```
+    Q3 -->|"No"| FBatch2["Spark foreachBatch with short intervals"]
+</pre>
 
 ---
 
