@@ -23,27 +23,25 @@ Common notations:
 
 Consider a simple e-commerce platform. A **customer** places **orders**, each order contains **order lines**, and each line references a **product**.
 
-<div class="mermaid" markdown="0">
+{::nomarkdown}
+<div class="mermaid">
 erDiagram
     CUSTOMER ||--o{ ORDER : places
     ORDER ||--|{ ORDER_LINE : contains
     ORDER_LINE }o--|| PRODUCT : references
     PRODUCT }o--|| CATEGORY : belongs_to
-
     CUSTOMER {
         int customer_id PK
         string name
         string email
         string country
     }
-
     ORDER {
         int order_id PK
         int customer_id FK
         date order_date
         decimal total_amount
     }
-
     ORDER_LINE {
         int line_id PK
         int order_id FK
@@ -51,19 +49,18 @@ erDiagram
         int quantity
         decimal unit_price
     }
-
     PRODUCT {
         int product_id PK
         int category_id FK
         string name
         decimal price
     }
-
     CATEGORY {
         int category_id PK
         string name
     }
 </div>
+{:/nomarkdown}
 
 ---
 
@@ -88,4 +85,3 @@ Getting cardinality right affects everything downstream:
 - **Slowly Changing Dimensions** — cardinality determines whether you need SCD Type 1, 2, or 3
 
 A solid data model is the foundation of a reliable data platform.
-
