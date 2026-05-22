@@ -589,6 +589,185 @@ Result: Know exactly which Kafka offsets are in v3
 
 ---
 
+### The Actual Checkpoint Directory on Disk
+
+Here's what your streaming checkpoint looks like after 4 successful batches:
+
+```
+.checkpoint/
+├── offsets/
+│   ├── 0
+│   │   └── contents: 100
+│   ├── 1
+│   │   └── contents: 200
+│   ├── 2
+│   │   └── contents: 300
+│   └── 3
+│   │   └── contents: 400
+│
+├── commits/
+│   ├── 0
+│   │   └── contents: v1.metadata.json (snapshot 1)
+│   ├── 1
+│   │   └── contents: v2.metadata.json (snapshot 2)
+│   ├── 2
+│   │   └── contents: v3.metadata.json (snapshot 3)
+│   └── 3
+│   │   └── contents: v4.metadata.json (snapshot 4)
+│
+└── batchMetadata/
+    ├── 0.json → {"batchId": 0, "offset": 100, "timestamp": ...}
+    ├── 1.json → {"batchId": 1, "offset": 200, "timestamp": ...}
+    ├── 2.json → {"batchId": 2, "offset": 300, "timestamp": ...}
+    └── 3.json → {"batchId": 3, "offset": 400, "timestamp": ...}
+```
+
+Each batch creates:
+1. An **offset file** - stores the max Kafka offset processed
+2. A **commit file** - stores the metadata snapshot version that was committed
+3. **Batch metadata** - tracks which records went into which snapshot
+
+---
+
+### Recovery Scenario: Offset 23, Last Commit 22
+
+Let me show what happens on restart when a crash occurs mid-batch:
+
+```mermaid
+graph TD
+    A["⚡ CRASH During Batch 23<br/>Data written to S3<br/>But commit not saved"] -->|"Process restarts"| B["Read Last Committed State"]
+    
+    B -->|"Check offsets/22"| C["Offset = 500<br/>Commit = v23.metadata.json<br/>Last successful batch"]
+    
+    C -->|"Check for offsets/23"| D["File NOT FOUND<br/>Batch 23 was in flight"]
+    
+    D -->|"Kafka seek to offset 500"| E["Read from Kafka<br/>offset 500 onward"]
+    
+    E -->|"Process batch 23 again"| F["New data files written<br/>Same content, new file names"]
+    
+    F -->|"Atomic swap"| G["version-hint → v24.metadata.json<br/>Save offsets/23 = 600<br/>Save commits/23 = v24.metadata.json"]
+    
+    G -->|"Success"| H["Table now shows<br/>Snapshot 24<br/>Records 0-599"]
+```
+
+**Detailed view of what's happening:**
+
+```
+On Crash at Batch 23:
+══════════════════════
+
+Checkpoint state on disk:
+├── offsets/22 → 500        ← Last committed offset
+├── commits/22 → v23.metadata.json
+└── offsets/23 → DOES NOT EXIST (batch 23 in flight)
+
+S3 state:
+└── s3://bucket/warehouse/data/
+    ├── batch-22-part-0.parquet (committed)
+    ├── batch-22-part-1.parquet (committed)
+    ├── batch-23-part-0.parquet (⚡ ORPHANED, not in metadata)
+    └── batch-23-part-1.parquet (⚡ ORPHANED, not in metadata)
+
+Version hint still points to v23.metadata.json (not updated)
+
+
+On Restart:
+═══════════
+
+1. Read checkpoint directory:
+   max_committed_batch = 22
+   last_offset = 500
+   
+2. Check: does offsets/23 exist?
+   NO → batch 23 was never committed
+   
+3. Kafka seek(500):
+   Start reading from offset 500 onward
+   
+4. Batch 23 processing (SECOND ATTEMPT):
+   Read Kafka records 500-599 (same as first attempt)
+   Write new parquet files:
+     - batch-23-part-0.parquet (new file names with deterministic hash)
+     - batch-23-part-1.parquet
+   
+5. Atomic commit:
+   ├─ Write v24.metadata.json (includes new batch-23 files)
+   ├─ Save offsets/23 → 600
+   ├─ Save commits/23 → v24.metadata.json
+   └─ Update version-hint → v24.metadata.json
+   
+6. Result:
+   ├─ Readers see snapshot 24
+   ├─ Table contains records 0-599
+   └─ Orphaned batch-23 files from first attempt are garbage collected
+```
+
+This is the **exactly-once guarantee in action**.
+
+---
+
+### Multi-Batch Restart: What If Batches 22, 23, 24 Were In-Flight
+
+```mermaid
+graph TD
+    A["Batch 21: Committed<br/>offset = 500"] -->|"Batch 22"| B["Data written<br/>Metadata created"]
+    B -->|"Batch 23"| C["Data written<br/>Metadata created"]
+    C -->|"Batch 24"| D["Data written<br/>⚡ FULL APP CRASH"]
+    
+    D -->|"Restart reads<br/>offsets/21 = 500<br/>Last committed"| E["Kafka seek(500)"]
+    
+    E -->|"Reprocess from 500"| F["Batch 22 retries<br/>New files, same content<br/>Commits: offsets/22 = 550"]
+    
+    F -->|"Continue"| G["Batch 23 retries<br/>New files, same content<br/>Commits: offsets/23 = 600"]
+    
+    G -->|"Continue"| H["Batch 24 retries<br/>New files, same content<br/>Commits: offsets/24 = 650"]
+    
+    H -->|"Result"| I["All previous attempts orphaned<br/>Batches 22-24 successfully committed<br/>Table snapshot = 25"]
+```
+
+---
+
+### The Commit Directory Deep Dive
+
+After 25 batches, your commit history looks like:
+
+```
+commits/
+├── 0  → v1.metadata.json
+├── 1  → v2.metadata.json
+├── 2  → v3.metadata.json
+...
+├── 21 → v22.metadata.json
+├── 22 → v23.metadata.json  (batch 22 created snapshot 23)
+├── 23 → v24.metadata.json  (batch 23 created snapshot 24)
+├── 24 → v25.metadata.json  (batch 24 created snapshot 25)
+└── ... (continuing up to current)
+```
+
+Each commit file contains:
+```json
+{
+  "batch-id": 23,
+  "snapshot-id": 24,
+  "metadata-version": "v24.metadata.json",
+  "kafka-offset": 600,
+  "timestamp": "2024-12-09T10:15:32Z",
+  "data-files": [
+    "batch-23-part-0-abc123.parquet",
+    "batch-23-part-1-def456.parquet"
+  ],
+  "row-count": 100000,
+  "status": "committed"
+}
+```
+
+When a stream restarts:
+1. Find the **highest batch ID** in the `commits/` directory
+2. That tells us which Kafka offset to seek to
+3. Continue from there with the next batch
+
+
+
 ## Failover Scenarios: Iceberg vs. Previous Tech
 
 ### Scenario 1: Single Executor Fails in Multi-Executor Batch
@@ -742,11 +921,11 @@ Key differences from previous tech:
 
 | Aspect | Spark + Hive | Delta Lake | Iceberg |
 |--------|------------|-----------|---------|
-| Data write & offset atomic? | ❌ No | ⚠ Merge needed | ✓ Yes |
-| Multi-sink consistency? | ❌ No | ⚠ Partial | ✓ Yes |
-| Orphaned files cleanup? | ❌ Manual | ⚠ Eventual | ✓ Automatic |
-| Duplicate handling on retry? | ❌ Duplicates occur | ⚠ Must dedupe | ✓ Idempotent |
-| Checkpoint-to-data drift? | ⚠ Common | ⚠ Possible | ✓ Never |
+| Data write & offset atomic? | No | Merge needed | Yes |
+| Multi-sink consistency? | No | Partial | Yes |
+| Orphaned files cleanup? | Manual | Eventual | Automatic |
+| Duplicate handling on retry? | Duplicates occur | Must dedupe | Idempotent |
+| Checkpoint-to-data drift? | Common | Possible | Never |
 
 ## Key Takeaways
 
@@ -787,3 +966,277 @@ Key differences from previous tech:
 
 
 
+## Exactly-Once Semantics: How Iceberg and Spark Structured Streaming Achieve It
+
+The gold standard for streaming systems is **exactly-once** semantics: each record is processed and written **exactly one time**, no duplicates, no skips.
+
+### The Challenge
+
+Most systems achieve only **at-least-once** or **at-most-once**:
+
+- **At-least-once**: If a crash happens, replay the batch. Problem: duplicates if offset was updated before crash
+- **At-most-once**: Don't replay, skip it. Problem: data loss
+
+Achieving **exactly-once** requires coordinating three operations atomically:
+1. Read from source (Kafka) at offset X
+2. Write data to sink (S3/Iceberg)
+3. Commit offset X
+
+If any fails, all must fail. If any succeeds, all must succeed.
+
+### Iceberg's Exactly-Once Architecture
+
+```mermaid
+graph TD
+    A["Batch N Starts<br/>Read Kafka offsets 500-599"] -->|"Transform & Write"| B["Data Files Created<br/>S3: batch-N-part-*.parquet"]
+    B -->|"Invisible to readers"| C["Metadata File Created<br/>v100.metadata.json<br/>References batch N files"]
+    C -->|"Still invisible"| D["Atomic Swap Point"]
+    D -->|"All-or-Nothing"| E["THREE Operations Atomically:<br/>1. Update version-hint → v100<br/>2. Save offsets/N → 599<br/>3. Save commits/N → v100.metadata.json"]
+    E -->|"Success"| F["Readers see batch N data<br/>Offset checkpoint updated<br/>Metadata locked"]
+    E -->|"Failure"| G["Nothing changes<br/>offsets/N file never created<br/>version-hint still old"]
+    G -->|"Retry"| A
+```
+
+The key is: **offset is written in the same atomic operation as metadata**.
+
+### Checkpoint Directory State Before and After Atomic Swap
+
+**BEFORE atomic swap (batch 22 in flight):**
+
+```
+.checkpoint/
+├── offsets/
+│   ├── 20 → 450
+│   └── 21 → 500
+│
+├── commits/
+│   ├── 20 → v21.metadata.json
+│   └── 21 → v22.metadata.json
+│
+└── In-Flight Data (Batch 22):
+    ├── Data files written to S3 (orphaned)
+    ├── v23.metadata.json created (unreferenced)
+    └── offsets/22 NOT YET WRITTEN
+```
+
+**AFTER atomic swap (batch 22 committed):**
+
+```
+.checkpoint/
+├── offsets/
+│   ├── 20 → 450
+│   ├── 21 → 500
+│   └── 22 → 550          ← APPEARED ATOMICALLY
+│
+├── commits/
+│   ├── 20 → v21.metadata.json
+│   ├── 21 → v22.metadata.json
+│   └── 22 → v23.metadata.json     ← APPEARED ATOMICALLY
+│
+└── S3 readers can now see:
+    Snapshot v23 with batch 22 data
+```
+
+The critical insight: **offsets/22 and commits/22 appear together, atomically, or not at all**.
+
+### Recovery Decision Tree
+
+```mermaid
+graph TD
+    A["Process Restarts"] -->|"Read checkpoint"| B["Check Max Committed Batch"]
+    B -->|"Example: offsets/22 exists"| C["Last committed: batch 22"]
+    C -->|"Max Kafka offset from offsets/22"| D["offsets/22 = 550"]
+    D -->|"Does offsets/23 exist?"| E{File Found?}
+    E -->|"Yes"| F["Batch 23 already committed<br/>Seek to offsets/23<br/>Process batch 24 next"]
+    E -->|"No"| G["Batch 23 crashed mid-flight<br/>Kafka seek(550)<br/>Reprocess batch 23"]
+    G -->|"Batch 23 retry starts"| H["Read Kafka 550-599<br/>Write data (same content)<br/>Atomic swap"]
+    H -->|"Success"| I["offsets/23 created<br/>commits/23 created<br/>Table snapshot updated"]
+```
+
+### Why This Is Exactly-Once (Not At-Least-Once)
+
+The traditional streaming architecture (Spark + Kafka + Parquet + Hive):
+
+```
+Spark reads: offsets 0-99 ✓
+Spark writes: part-0.parquet ✓
+Hive metastore updates: partition added ✓
+Offset checkpoint: 100  ⚡ CRASH HERE
+
+On restart:
+- Partition exists (readers see it)
+- Offset is still 0 (retry logic restarts at 0)
+- Result: records 0-99 READ TWICE
+  → AT-LEAST-ONCE (duplicates)
+```
+
+Iceberg's approach (offset + metadata atomic):
+
+```
+Iceberg reads: offsets 0-99 ✓
+Iceberg writes: data files ✓
+Iceberg writes: v1.metadata.json ✓
+ATOMIC SWAP STARTS:
+  - Update version-hint ✓
+  - Write offsets/0 = 99 ✓
+  - Write commits/0 = v1.metadata.json ✓
+ATOMIC SWAP COMPLETE
+  ⚡ CRASH HERE (too late, already committed)
+
+On restart:
+- offsets/0 exists → batch 0 definitely committed
+- commits/0 exists → snapshot definitely exists
+- Kafka seek(99) → read next batch starting at 100
+- Result: records 0-99 READ EXACTLY ONCE
+  → EXACTLY-ONCE (no duplicates)
+```
+
+### The Three Guarantees
+
+Let's visualize how each guarantee differs:
+
+```mermaid
+graph LR
+    A["Source<br/>offsets 0-99"] -->|"Read"| B["Process<br/>transform"]
+    B -->|"Write"| C["Sink<br/>S3 files"]
+    C -->|"Commit?"| D["Checkpoint<br/>offset = 99"]
+    
+    style A fill:#e1f5ff
+    style B fill:#fff3e0
+    style C fill:#f3e5f5
+    style D fill:#e8f5e9
+```
+
+**At-Most-Once (lose data):**
+```
+Crash during write?
+→ Restart seeks to offset 100
+→ Records 0-99 never re-attempted
+→ Data permanently lost
+```
+
+**At-Least-Once (duplicates):**
+```
+Crash after write, before checkpoint?
+→ Restart seeks to offset 0 (checkpoint says 0)
+→ Re-read and re-write records 0-99
+→ Now in sink TWICE
+→ Duplicates in table
+```
+
+**Exactly-Once (Iceberg):**
+```
+Crash any time?
+→ Restart checks: is checkpoint file for this batch there?
+→ If yes: offset and snapshot BOTH exist → skip to next batch
+→ If no: offset file missing → this batch incomplete → retry
+→ Atomic swap ensures they appear or disappear together
+→ NO duplicates, NO data loss
+```
+
+### Spark Structured Streaming's Exactly-Once with Iceberg
+
+Spark Structured Streaming achieves exactly-once through a similar pattern:
+
+```scala
+streamingDF.writeStream
+  .option("checkpointLocation", "/path/to/checkpoint")
+  .foreachBatch { (batchDF, batchId) =>
+    
+    batchDF.write
+      .mode("append")
+      .format("iceberg")
+      .save("my_table")
+    
+  }
+  .start()
+```
+
+Behind the scenes, Spark does:
+
+```
+For each micro-batch:
+  
+1. Read from Kafka (offsets tracked internally)
+2. Transform (deterministic = same output if re-run)
+3. Write to Iceberg table:
+   - Create manifest files (invisible)
+   - Create metadata snapshot (invisible)
+4. Atomic swap (version-hint + offset + batch metadata)
+5. If swap succeeds:
+   - Checkpoint record saved to disk
+   - Next batch starts from new offset
+6. If swap fails:
+   - Checkpoint not saved
+   - Next restart retries this batch
+   - Same input → same output (idempotent)
+   → Exactly-once achieved
+```
+
+The **deterministic output** is crucial. Batch N must produce identical data every time it runs with the same input offsets. Iceberg helps here because:
+
+- File names are deterministic (based on offset range)
+- Data in files is identical (same transformation)
+- If retry writes same file: Iceberg deduplicates
+- No double-writing
+
+### Mermaid: End-to-End Exactly-Once Flow
+
+```mermaid
+sequenceDiagram
+    participant KA as Kafka
+    participant S3 as S3 Storage
+    participant CP as Checkpoint Dir
+    participant RE as Readers
+    
+    KA ->> S3: Batch 5: Read offsets 500-599
+    S3 ->> S3: Write data files (invisible)
+    S3 ->> S3: Create v25.metadata.json (invisible)
+    
+    S3 ->> CP: Atomic Op: Save offsets/5 = 599
+    S3 ->> CP: Atomic Op: Save commits/5 = v25.metadata.json
+    CP ->> CP: Update version-hint → v25
+    
+    Note over CP: All 3 writes succeeded atomically
+    
+    CP ->> RE: Readers now see snapshot v25
+    RE ->> S3: Query returns batch 5 data
+    
+    Note over KA,RE: Even if crash happens AFTER this point,<br/>offsets/5 file proves batch 5 was committed
+    
+    KA ->> S3: Batch 6: Starts at offset 599
+    Note over KA,RE: EXACTLY-ONCE: Each record seen once
+```
+
+### Why Not Just Use Spark + Hive?
+
+Old architecture vs. new:
+
+```
+OLD (Spark + Hive Partitions):
+┌──────────────────────────────────┐
+│ Batch Processing                 │
+├──────────────────────────────────┤
+│ 1. Read Kafka offsets 0-99       │
+│ 2. Write to s3://data/part-0     │
+│ 3. INSERT INTO table PARTITION   │ ← Hive metastore call
+│ 4. Write offset checkpoint       │ ← Separate operation
+│                                  │
+│ Problem: 2 independent ops (#3, #4)
+│ Crash between them = mess        │
+└──────────────────────────────────┘
+
+NEW (Spark + Iceberg):
+┌──────────────────────────────────┐
+│ Batch Processing                 │
+├──────────────────────────────────┤
+│ 1. Read Kafka offsets 0-99       │
+│ 2. Write to s3://data/...        │
+│ 3. Create v5.metadata.json       │
+│ 4. ATOMIC: Swap version-hint +   │
+│    Save offsets + Save commits   │
+│                                  │
+│ Advantage: Single atomic op      │
+│ All-or-nothing guarantee         │
+└──────────────────────────────────┘
+```
