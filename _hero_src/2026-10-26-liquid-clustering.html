@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Liquid Clustering Hero</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fbf6ef; --ink: #2b2420; --muted: #6d625a; --line: #e6d9ca;
+    --orange: #e8742a; --orange-deep: #b9531a; --peach: #fde6d3; --apricot: #fbd4b2;
+    --mint: #dcefe5; --green: #2f7d5a; --lav: #e6e5f6; --violet: #5a58a8;
+    --butter: #fff1c7; --rose: #f8dcd8; --red: #b8402f; --card: #fffdf9;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { width: 1600px; background: var(--bg); color: var(--ink); font-family: Inter, sans-serif; font-size: 14px; line-height: 1.35; padding: 26px 28px 22px; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  header { display: flex; align-items: center; gap: 22px; margin-bottom: 18px; }
+  .tag { border: 2px solid var(--orange-deep); color: var(--orange-deep); font-weight: 800; letter-spacing: .12em; font-size: 13px; padding: 7px 12px; border-radius: 8px; transform: rotate(-4deg); background: var(--peach); }
+  header h1 { font-size: 40px; font-weight: 800; letter-spacing: -.01em; line-height: 1.05; }
+  header h1 span { color: var(--orange); }
+  header p { font-size: 17px; color: var(--muted); margin-top: 6px; }
+  .stack { margin-left: auto; text-align: right; font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .stack b { color: var(--ink); font-size: 13px; }
+
+  .row { display: grid; gap: 16px; margin-bottom: 16px; }
+  .r1 { grid-template-columns: 1fr 1.35fr .95fr; }
+  .r3 { grid-template-columns: 1.15fr 1fr 1fr; }
+
+  .panel { background: var(--card); border: 1.5px solid var(--line); border-radius: 14px; padding: 14px 16px 16px; position: relative; }
+  .panel h2 { font-size: 15px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .num { width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: #fff; background: var(--orange); flex: none; }
+  .p-orange { border-color: #f1c39f; } .p-orange h2 { color: var(--orange-deep); }
+  .p-violet { border-color: #cfcdec; } .p-violet h2 { color: var(--violet); } .p-violet .num { background: var(--violet); }
+  .p-green { border-color: #b9dcc9; } .p-green h2 { color: var(--green); } .p-green .num { background: var(--green); }
+  .p-red { border-color: #ecc1ba; } .p-red h2 { color: var(--red); } .p-red .num { background: var(--red); }
+
+  .lead { font-size: 14.5px; margin-bottom: 8px; }
+  .lead b { color: var(--orange-deep); }
+  .pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .pill { font-size: 12px; font-weight: 600; padding: 4px 9px; border-radius: 999px; background: var(--peach); color: var(--orange-deep); }
+  .pill.g { background: var(--mint); color: var(--green); }
+  .map { display: grid; gap: 5px; margin-top: 8px; font-size: 12.5px; color: var(--muted); }
+  .map div { display: grid; grid-template-columns: 158px 18px 1fr; align-items: center; }
+  .map .pill { justify-self: start; }
+  .map i { font-style: normal; color: var(--orange); font-weight: 800; }
+  .map b { color: #fff; background: var(--orange); border-radius: 4px; padding: 0 5px; font-size: 11px; }
+  .watch { margin-top: 10px; background: var(--rose); border-radius: 10px; padding: 8px 10px; }
+  .watch h3 { font-size: 12.5px; font-weight: 800; color: var(--red); letter-spacing: .05em; text-transform: uppercase; margin-bottom: 3px; }
+  .watch li { font-size: 12.5px; margin-left: 16px; }
+
+  table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12.5px; }
+  th { text-align: left; font-weight: 700; padding: 7px 8px; font-size: 12.5px; }
+  th.c1 { background: #f3ece3; border-radius: 8px 0 0 0; }
+  th.c2 { background: #efeee9; color: #5b5550; }
+  th.c3 { background: var(--lav); color: var(--violet); }
+  th.c4 { background: var(--apricot); color: var(--orange-deep); border-radius: 0 8px 0 0; }
+  td { padding: 6px 8px; border-bottom: 1px solid #f0e6da; vertical-align: top; }
+  td:first-child { font-weight: 700; color: var(--muted); white-space: nowrap; }
+  td:last-child { background: #fff4ea; font-weight: 600; }
+  tr:last-child td { border-bottom: none; }
+
+  .use { margin-bottom: 9px; }
+  .use h3 { font-size: 13.5px; font-weight: 700; margin-bottom: 4px; }
+  .use h3 em { font-style: normal; padding: 1px 7px; border-radius: 6px; }
+  .use ul { list-style: none; display: grid; gap: 2px; }
+  .use li { font-size: 12.8px; padding-left: 20px; position: relative; }
+  .use li::before { content: ""; position: absolute; left: 2px; top: 3px; width: 11px; height: 11px; border-radius: 3px; border: 1.6px solid currentColor; }
+  .use li::after { content: ""; position: absolute; left: 5px; top: 5px; width: 5px; height: 3px; border-left: 1.8px solid currentColor; border-bottom: 1.8px solid currentColor; transform: rotate(-45deg); }
+  .u-lc li { color: var(--orange-deep); } .u-lc li span, .u-pz li span, .u-no li span { color: var(--ink); }
+  .u-pz li { color: var(--violet); } .u-no li { color: var(--muted); }
+  .note { background: var(--butter); border: 1.5px dashed #e3c66a; border-radius: 10px; padding: 7px 10px; font-size: 12.5px; }
+
+  .mechs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  .mech { background: #fffaf4; border: 1px solid #f0e2d2; border-radius: 12px; padding: 10px 10px 8px; }
+  .mech h3 { font-size: 13.5px; font-weight: 700; display: flex; gap: 7px; align-items: baseline; margin-bottom: 2px; }
+  .mech h3 i { font-style: normal; color: var(--orange); font-weight: 800; }
+  .mech p { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .mech p b { color: var(--ink); }
+  svg text { font-family: Inter, sans-serif; }
+
+  pre { font-family: 'JetBrains Mono', monospace; font-size: 12.2px; line-height: 1.55; background: #2d2622; color: #f3e9dd; border-radius: 10px; padding: 12px 14px; }
+  pre .k { color: #ffb37a; } pre .c { color: #a8998c; } pre .s { color: #b9e3c8; }
+
+  .cost { display: grid; gap: 8px; }
+  .cost-row { display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: start; }
+  .cost-row .ic { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; }
+  .cost-row b { font-size: 13px; } .cost-row div { font-size: 12.5px; }
+  .ok { margin-top: 9px; display: grid; gap: 6px; }
+  .ok div { font-size: 12.5px; border-radius: 8px; padding: 6px 9px; }
+
+  .take { list-style: none; display: grid; gap: 5px; }
+  .take li { font-size: 13px; padding-left: 22px; position: relative; }
+  .take li::before { content: ""; position: absolute; left: 0; top: 2px; width: 14px; height: 14px; border-radius: 4px; background: var(--mint); border: 1.5px solid var(--green); }
+  .take li::after { content: ""; position: absolute; left: 4px; top: 5px; width: 6px; height: 3px; border-left: 2px solid var(--green); border-bottom: 2px solid var(--green); transform: rotate(-45deg); }
+
+  footer { display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px; }
+  footer div { border-radius: 12px; padding: 10px 16px; font-size: 14px; }
+  .f1 { background: var(--peach); border: 1.5px solid #f1c39f; }
+  .f1 b { color: var(--orange-deep); }
+  .f2 { background: var(--mint); border: 1.5px dashed #9fcdb4; }
+  .f2 b { color: var(--green); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="tag">DEEP DIVE</div>
+  <div>
+    <h1>Databricks <span>Liquid Clustering</span>: How It Works &amp; When to Skip It</h1>
+    <p>A data layout that replaces partitioning and ZORDER. Change clustering keys without rewriting data.</p>
+  </div>
+  <div class="stack"><b>Delta Lake · Unity Catalog</b><br>Databricks Runtime 15.4 LTS+<br>Delta Lake 3.1+ (OSS)</div>
+</header>
+
+<!-- ROW 1 -->
+<div class="row r1">
+
+  <section class="panel p-orange">
+    <h2><span class="num">1</span>What is liquid clustering?</h2>
+    <p class="lead">You name <b>up to 4 clustering keys</b>. Delta keeps rows with similar key values in the same files, so queries that filter on those keys <b>skip the files they don't need</b>.</p>
+    <svg viewBox="0 0 470 150" width="100%" role="img" aria-label="Rows are sorted along a Hilbert curve, written as files with tight key ranges, and queries skip non-matching files">
+      <defs><marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#b9531a"/></marker></defs>
+      <!-- rows -->
+      <rect x="4" y="18" width="96" height="104" rx="10" fill="#fff" stroke="#e6d9ca"/>
+      <g fill="#e8742a"><circle cx="24" cy="44" r="4"/><circle cx="70" cy="38" r="4"/><circle cx="48" cy="66" r="4"/><circle cx="82" cy="78" r="4"/><circle cx="30" cy="92" r="4"/><circle cx="62" cy="100" r="4"/><circle cx="40" cy="36" r="4" fill="#5a58a8"/><circle cx="76" cy="58" r="4" fill="#5a58a8"/><circle cx="20" cy="70" r="4" fill="#5a58a8"/><circle cx="54" cy="86" r="4" fill="#2f7d5a"/><circle cx="86" cy="100" r="4" fill="#2f7d5a"/></g>
+      <text x="52" y="140" text-anchor="middle" font-size="12" font-weight="600" fill="#2b2420">Rows arrive mixed</text>
+      <path d="M104 70H122" stroke="#b9531a" stroke-width="2" marker-end="url(#a1)"/>
+      <!-- sort -->
+      <rect x="126" y="18" width="96" height="104" rx="10" fill="#fff" stroke="#e6d9ca"/>
+      <polyline fill="none" stroke="#e8742a" stroke-width="2.4" stroke-linejoin="round" points="142,38 160,38 160,56 142,56 142,74 142,92 160,92 160,74 178,74 178,92 196,92 196,74 196,56 178,56 178,38 196,38"/>
+      <text x="174" y="116" text-anchor="middle" font-size="11" fill="#6d625a">Hilbert curve</text>
+      <text x="174" y="140" text-anchor="middle" font-size="12" font-weight="600" fill="#2b2420">Sort on all keys</text>
+      <path d="M226 70H244" stroke="#b9531a" stroke-width="2" marker-end="url(#a1)"/>
+      <!-- files -->
+      <rect x="248" y="18" width="104" height="104" rx="10" fill="#fff" stroke="#e6d9ca"/>
+      <g font-size="10.5" font-family="JetBrains Mono, monospace">
+        <rect x="258" y="28" width="84" height="22" rx="4" fill="#fde6d3"/><text x="300" y="43" text-anchor="middle" fill="#b9531a">f1 · 1–10k</text>
+        <rect x="258" y="56" width="84" height="22" rx="4" fill="#e6e5f6"/><text x="300" y="71" text-anchor="middle" fill="#5a58a8">f2 · 10k–20k</text>
+        <rect x="258" y="84" width="84" height="22" rx="4" fill="#dcefe5"/><text x="300" y="99" text-anchor="middle" fill="#2f7d5a">f3 · 20k–30k</text>
+      </g>
+      <text x="300" y="140" text-anchor="middle" font-size="12" font-weight="600" fill="#2b2420">Tight min/max per file</text>
+      <path d="M356 70H374" stroke="#b9531a" stroke-width="2" marker-end="url(#a1)"/>
+      <!-- query -->
+      <rect x="378" y="18" width="88" height="104" rx="10" fill="#fff" stroke="#e6d9ca"/>
+      <text x="422" y="38" text-anchor="middle" font-size="10" font-family="JetBrains Mono, monospace" fill="#2b2420">key = 42</text>
+      <rect x="394" y="48" width="56" height="16" rx="3" fill="#fde6d3" stroke="#e8742a"/><text x="422" y="60" text-anchor="middle" font-size="10" font-weight="700" fill="#b9531a">read f1</text>
+      <rect x="394" y="70" width="56" height="16" rx="3" fill="#f3ece3"/><text x="422" y="82" text-anchor="middle" font-size="10" fill="#9a8f86">skip f2</text>
+      <rect x="394" y="92" width="56" height="16" rx="3" fill="#f3ece3"/><text x="422" y="104" text-anchor="middle" font-size="10" fill="#9a8f86">skip f3</text>
+      <text x="422" y="140" text-anchor="middle" font-size="12" font-weight="600" fill="#2b2420">Query skips files</text>
+    </svg>
+    <div class="map">
+      <div><span class="pill">Flexible keys</span><i>←</i><span>layout in the log <b>A</b> <b>E</b></span></div>
+      <div><span class="pill">Multi-column skipping</span><i>←</i><span>Hilbert sort + file stats <b>B</b> <b>C</b></span></div>
+      <div><span class="pill">Cheap maintenance</span><i>←</i><span>incremental ZCubes <b>D</b></span></div>
+      <div><span class="pill g">Fewer write conflicts</span><i>←</i><span>row-level concurrency</span></div>
+    </div>
+  </section>
+
+  <section class="panel p-violet">
+    <h2><span class="num">2</span>Partitioning vs ZORDER vs Liquid</h2>
+    <table>
+      <tr><th class="c1"></th><th class="c2">Partitioning</th><th class="c3">Partition + ZORDER</th><th class="c4">Liquid clustering</th></tr>
+      <tr><td>Layout lives in</td><td>Folder paths</td><td>Folder paths + sorted files</td><td>Delta log metadata</td></tr>
+      <tr><td>Change keys</td><td>Rewrite the table</td><td>Rewrite the table</td><td>ALTER TABLE, no rewrite</td></tr>
+      <tr><td>Skips files on</td><td>Partition column</td><td>Partition + Z columns</td><td>Up to 4 keys</td></tr>
+      <tr><td>Sort order</td><td>None within a folder</td><td>Z-order curve</td><td>Hilbert curve</td></tr>
+      <tr><td>Maintenance</td><td>Compact small files</td><td>Full re-sort per run</td><td>Incremental (ZCubes)</td></tr>
+      <tr><td>Write conflicts</td><td>File level</td><td>File level</td><td>Row level</td></tr>
+      <tr><td>Compute</td><td>At write time only</td><td>OPTIMIZE re-sorts</td><td>On write + incremental</td></tr>
+      <tr><td>Combine with others</td><td>With ZORDER</td><td>—</td><td>Neither, by design</td></tr>
+    </table>
+  </section>
+
+  <section class="panel p-green">
+    <h2><span class="num">3</span>When to use what?</h2>
+    <div class="use u-lc"><h3><em style="background:#fde6d3;color:#b9531a">Liquid clustering</em> when</h3>
+      <ul><li><span>Creating a new table (Databricks default)</span></li><li><span>Queries filter on several columns</span></li><li><span>Access patterns change over time</span></li><li><span>Many concurrent writers</span></li></ul></div>
+    <div class="use u-pz"><h3><em style="background:#e6e5f6;color:#5a58a8">Partition + ZORDER</em> when</h3>
+      <ul><li><span>Whole-partition drops or overwrites</span></li><li><span>Partitions never change once written</span></li><li><span>Readers prune by folder / old protocol</span></li><li><span>Runtimes pinned below LC support</span></li></ul></div>
+    <div class="use u-no"><h3><em style="background:#efeee9;color:#5b5550">No layout</em> when</h3>
+      <ul><li><span>Small tables or mostly full scans</span></li></ul></div>
+    <div class="note"><b>Hard limits:</b> max 4 keys · keys need stats · no complex types · can't mix with partitioning or ZORDER</div>
+  </section>
+</div>
+
+<!-- ROW 2: mechanisms -->
+<section class="panel p-orange" style="margin-bottom:16px">
+  <h2><span class="num">4</span>Under the hood: five mechanisms</h2>
+  <div class="mechs">
+
+    <div class="mech">
+      <h3><i>A</i>Layout lives in the log</h3>
+      <svg viewBox="0 0 270 132" width="100%" role="img" aria-label="Partitioned layout stored as folders versus liquid layout stored as log metadata over flat files">
+        <text x="66" y="14" text-anchor="middle" font-size="11" font-weight="700" fill="#5a58a8">Partitioned</text>
+        <g font-size="9.5" font-family="JetBrains Mono, monospace" fill="#2b2420">
+          <rect x="8" y="22" width="116" height="20" rx="4" fill="#e6e5f6"/><text x="16" y="36">date=10-01/</text>
+          <rect x="8" y="48" width="116" height="20" rx="4" fill="#e6e5f6"/><text x="16" y="62">date=10-02/</text>
+          <rect x="8" y="74" width="116" height="20" rx="4" fill="#e6e5f6"/><text x="16" y="88">date=10-03/</text>
+        </g>
+        <text x="66" y="112" text-anchor="middle" font-size="10" fill="#6d625a">path = index</text>
+        <text x="66" y="125" text-anchor="middle" font-size="10" fill="#b8402f">new key = move every file</text>
+        <text x="204" y="14" text-anchor="middle" font-size="11" font-weight="700" fill="#b9531a">Liquid</text>
+        <rect x="146" y="22" width="116" height="34" rx="5" fill="#fde6d3" stroke="#e8742a"/>
+        <text x="204" y="36" text-anchor="middle" font-size="9.5" font-family="JetBrains Mono, monospace" fill="#b9531a">_delta_log</text>
+        <text x="204" y="49" text-anchor="middle" font-size="9" fill="#2b2420">keys + min/max stats</text>
+        <path d="M204 58V68" stroke="#b9531a" stroke-width="1.5"/>
+        <g fill="#fff" stroke="#e6d9ca"><rect x="150" y="70" width="24" height="24" rx="3"/><rect x="178" y="70" width="24" height="24" rx="3"/><rect x="206" y="70" width="24" height="24" rx="3"/><rect x="234" y="70" width="24" height="24" rx="3"/></g>
+        <text x="204" y="112" text-anchor="middle" font-size="10" fill="#6d625a">flat files</text>
+        <text x="204" y="125" text-anchor="middle" font-size="10" fill="#2f7d5a">new key = one commit</text>
+      </svg>
+      <p>Keys are a table property in the Delta log (<b>Clustering</b> + <b>DomainMetadata</b> features).</p>
+    </div>
+
+    <div class="mech">
+      <h3><i>B</i>Hilbert, not Z-order</h3>
+      <svg viewBox="0 0 270 132" width="100%" role="img" aria-label="Z-order curve with long jumps next to a Hilbert curve that only steps to neighbouring cells">
+        <g fill="none" stroke="#e6d9ca"><rect x="25" y="10" width="88" height="88"/><path d="M47 10V98M69 10V98M91 10V98M25 32H113M25 54H113M25 76H113"/><rect x="157" y="10" width="88" height="88"/><path d="M179 10V98M201 10V98M223 10V98M157 32H245M157 54H245M157 76H245"/></g>
+        <polyline fill="none" stroke="#5a58a8" stroke-width="2.2" stroke-linejoin="round" points="36,21 58,21 36,43 58,43 80,21 102,21 80,43 102,43 36,65 58,65 36,87 58,87 80,65 102,65 80,87 102,87"/>
+        <polyline fill="none" stroke="#e8742a" stroke-width="2.4" stroke-linejoin="round" points="168,21 190,21 190,43 168,43 168,65 168,87 190,87 190,65 212,65 212,87 234,87 234,65 234,43 212,43 212,21 234,21"/>
+        <text x="69" y="113" text-anchor="middle" font-size="10.5" font-weight="700" fill="#5a58a8">Z-order</text>
+        <text x="69" y="126" text-anchor="middle" font-size="10" fill="#6d625a">long jumps</text>
+        <text x="201" y="113" text-anchor="middle" font-size="10.5" font-weight="700" fill="#b9531a">Hilbert</text>
+        <text x="201" y="126" text-anchor="middle" font-size="10" fill="#6d625a">neighbours only</text>
+      </svg>
+      <p>A file is a run of the curve. <b>Fewer jumps → tighter key ranges</b> in every file.</p>
+    </div>
+
+    <div class="mech">
+      <h3><i>C</i>Min/max stats skip files</h3>
+      <svg viewBox="0 0 270 132" width="100%" role="img" aria-label="Unclustered files all overlap the query value; clustered files have narrow ranges so only one is read">
+        <text x="6" y="12" font-size="10.5" font-weight="700" fill="#6d625a">Unclustered</text>
+        <g fill="#efeee9" stroke="#c9c2b4"><rect x="20" y="18" width="232" height="8" rx="3"/><rect x="26" y="30" width="222" height="8" rx="3"/><rect x="18" y="42" width="230" height="8" rx="3"/></g>
+        <text x="262" y="12" text-anchor="end" font-size="10" font-weight="700" fill="#b8402f">read 3/3</text>
+        <text x="6" y="70" font-size="10.5" font-weight="700" fill="#b9531a">Clustered</text>
+        <rect x="20" y="76" width="74" height="8" rx="3" fill="#fde6d3" stroke="#e8742a"/>
+        <rect x="98" y="88" width="74" height="8" rx="3" fill="#f3ece3" stroke="#e6d9ca"/>
+        <rect x="176" y="100" width="76" height="8" rx="3" fill="#f3ece3" stroke="#e6d9ca"/>
+        <text x="262" y="70" text-anchor="end" font-size="10" font-weight="700" fill="#2f7d5a">read 1/3</text>
+        <path d="M60 14V112" stroke="#b8402f" stroke-width="1.6" stroke-dasharray="4 3"/>
+        <text x="60" y="126" text-anchor="middle" font-size="9.5" font-family="JetBrains Mono, monospace" fill="#b8402f">WHERE key = 42</text>
+        <text x="252" y="126" text-anchor="end" font-size="9.5" fill="#6d625a">key value →</text>
+      </svg>
+      <p>No new index: clustering makes the <b>existing per-file stats selective</b>.</p>
+    </div>
+
+    <div class="mech">
+      <h3><i>D</i>ZCubes: incremental OPTIMIZE</h3>
+      <svg viewBox="0 0 270 132" width="100%" role="img" aria-label="OPTIMIZE leaves tagged ZCubes alone and only clusters untagged new files into a new ZCube">
+        <defs><marker id="a4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#b9531a"/></marker></defs>
+        <rect x="6" y="10" width="92" height="28" rx="6" fill="#fde6d3" stroke="#e8742a"/><text x="52" y="28" text-anchor="middle" font-size="10.5" font-weight="600" fill="#b9531a">ZCube A ✓</text>
+        <rect x="6" y="44" width="92" height="28" rx="6" fill="#fde6d3" stroke="#e8742a"/><text x="52" y="62" text-anchor="middle" font-size="10.5" font-weight="600" fill="#b9531a">ZCube B ✓</text>
+        <rect x="6" y="78" width="92" height="28" rx="6" fill="#fff" stroke="#9a8f86" stroke-dasharray="4 3"/><text x="52" y="96" text-anchor="middle" font-size="10.5" fill="#6d625a">new files</text>
+        <text x="110" y="34" font-size="9.5" fill="#9a8f86">skipped</text>
+        <path d="M100 92H150" stroke="#b9531a" stroke-width="1.8" marker-end="url(#a4)"/>
+        <text x="125" y="86" text-anchor="middle" font-size="9.5" font-weight="700" fill="#b9531a">OPTIMIZE</text>
+        <rect x="156" y="78" width="104" height="28" rx="6" fill="#fde6d3" stroke="#e8742a" stroke-width="2"/><text x="208" y="96" text-anchor="middle" font-size="10.5" font-weight="700" fill="#b9531a">ZCube C ✓</text>
+        <text x="135" y="124" text-anchor="middle" font-size="10" fill="#6d625a">files tagged with ZCube ID in the log</text>
+      </svg>
+      <p>Only <b>untagged files</b> are rewritten. <b>OPTIMIZE FULL</b> reclusters everything.</p>
+    </div>
+
+    <div class="mech">
+      <h3><i>E</i>Key change = metadata commit</h3>
+      <svg viewBox="0 0 270 132" width="100%" role="img" aria-label="Changing clustering keys adds one log commit; old files keep their layout until OPTIMIZE FULL">
+        <g font-size="9.5" font-family="JetBrains Mono, monospace">
+          <rect x="6" y="8" width="258" height="22" rx="4" fill="#f3ece3"/><text x="14" y="23" fill="#6d625a">00041.json  WRITE</text>
+          <rect x="6" y="34" width="258" height="34" rx="4" fill="#fde6d3" stroke="#e8742a"/><text x="14" y="49" fill="#b9531a" font-weight="600">00042.json  CLUSTER BY</text><text x="14" y="61" fill="#b9531a">(region, customer_id)</text>
+          <rect x="6" y="72" width="258" height="22" rx="4" fill="#f3ece3"/><text x="14" y="87" fill="#6d625a">00043.json  OPTIMIZE (new keys)</text>
+        </g>
+        <text x="6" y="110" font-size="10" fill="#2f7d5a" font-weight="600">no data files touched</text>
+        <text x="6" y="124" font-size="10" fill="#6d625a">old files keep old layout until FULL</text>
+      </svg>
+      <p>Queries stay <b>correct</b> throughout; only skipping improves.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ROW 3 -->
+<div class="row r3">
+  <section class="panel p-violet">
+    <h2><span class="num">5</span>In code</h2>
+<pre><span class="k">CREATE TABLE</span> sales.orders (...)
+<span class="k">CLUSTER BY</span> (order_date, customer_id);
+
+<span class="k">OPTIMIZE</span> sales.orders;                 <span class="c">-- incremental</span>
+<span class="k">ALTER TABLE</span> sales.orders
+  <span class="k">CLUSTER BY</span> (region, customer_id);   <span class="c">-- no rewrite</span>
+<span class="k">OPTIMIZE</span> sales.orders <span class="k">FULL</span>;            <span class="c">-- recluster old files</span>
+<span class="k">ALTER TABLE</span> sales.orders <span class="k">CLUSTER BY AUTO</span>; <span class="c">-- UC managed</span>
+<span class="k">DESCRIBE DETAIL</span> sales.orders;          <span class="c">-- shows keys</span>
+
+<span class="c"># streaming: cluster on write</span>
+spark.conf.set(<span class="s">"spark.databricks.delta.liquid</span>
+  <span class="s">.eagerClustering.streaming.enabled"</span>, <span class="s">"true"</span>)</pre>
+  </section>
+
+  <section class="panel p-red">
+    <h2><span class="num">6</span>What it costs to run</h2>
+    <div class="cost">
+      <div class="cost-row"><span class="ic" style="background:#fde6d3"><svg width="18" height="18" viewBox="0 0 18 18"><path d="M3 14L8 4l3 6 2-3 2 7z" fill="none" stroke="#b9531a" stroke-width="1.8" stroke-linejoin="round"/></svg></span><div><b>On write</b><br>Writer does the extra sort once a transaction passes the size threshold.</div></div>
+      <div class="cost-row"><span class="ic" style="background:#e6e5f6"><svg width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="6" fill="none" stroke="#5a58a8" stroke-width="1.8"/><path d="M9 5v4l3 2" fill="none" stroke="#5a58a8" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>Scheduled OPTIMIZE</b><br>Your compute clusters small writes later. Every 1–2 h for busy tables.</div></div>
+      <div class="cost-row"><span class="ic" style="background:#dcefe5"><svg width="18" height="18" viewBox="0 0 18 18"><path d="M4 12a4 4 0 010-8 5 5 0 019.6 1.5A3.2 3.2 0 0113 12z" fill="none" stroke="#2f7d5a" stroke-width="1.8" stroke-linejoin="round"/></svg></span><div><b>Predictive optimization</b><br>Databricks runs it on billed serverless. Required for CLUSTER BY AUTO.</div></div>
+    </div>
+    <div class="ok">
+      <div style="background:#dcefe5"><b style="color:#2f7d5a">Falling behind costs speed, not correctness.</b></div>
+      <div style="background:#e6e5f6"><b style="color:#5a58a8">ZORDER needs OPTIMIZE too</b>, and re-sorts all it targets.</div>
+    </div>
+  </section>
+
+  <section class="panel p-green">
+    <h2><span class="num">7</span>Key takeaways</h2>
+    <ul class="take">
+      <li>Layout lives in the log, so <b>keys change without rewrites</b></li>
+      <li>Hilbert sort → <b>tight per-file min/max</b> → files skipped</li>
+      <li>ZCubes make OPTIMIZE <b>incremental</b></li>
+      <li>Run <b>OPTIMIZE FULL</b> after changing keys</li>
+      <li>Protocol upgrade is <b>one-way</b>: check every reader first</li>
+      <li>Keep partitioning when the workload is <b>built around it</b></li>
+    </ul>
+    <div class="watch"><h3>Common mistakes</h3><ul>
+      <li>Changing keys, never running OPTIMIZE FULL</li>
+      <li>Streaming without the eager-clustering config</li>
+      <li>Enabling LC before checking external readers</li>
+    </ul></div>
+  </section>
+</div>
+
+<footer>
+  <div class="f1"><b>Rule of thumb:</b> liquid clustering for new tables. Partition + ZORDER only when the workload is built around the partition column.</div>
+  <div class="f2"><b>Verify:</b> compare files read vs. pruned for your top queries, before and after.</div>
+</footer>
+
+</body>
+</html>
