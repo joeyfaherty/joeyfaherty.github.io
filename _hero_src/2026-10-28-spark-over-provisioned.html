@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spark Over-Provisioned Hero</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fbf6ef; --ink: #2b2420; --muted: #6d625a; --line: #e6d9ca;
+    --orange: #e8742a; --orange-deep: #b9531a; --peach: #fde6d3; --apricot: #fbd4b2;
+    --mint: #dcefe5; --green: #2f7d5a; --lav: #e6e5f6; --violet: #5a58a8;
+    --butter: #fff1c7; --rose: #f8dcd8; --red: #b8402f; --card: #fffdf9;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { width: 1600px; background: var(--bg); color: var(--ink); font-family: Inter, sans-serif; font-size: 14px; line-height: 1.35; padding: 26px 28px 22px; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  header { display: flex; align-items: center; gap: 22px; margin-bottom: 18px; }
+  .tag { border: 2px solid var(--orange-deep); color: var(--orange-deep); font-weight: 800; letter-spacing: .12em; font-size: 13px; padding: 7px 12px; border-radius: 8px; transform: rotate(-4deg); background: var(--peach); }
+  header h1 { font-size: 40px; font-weight: 800; letter-spacing: -.01em; line-height: 1.05; }
+  header h1 span { color: var(--orange); }
+  header p { font-size: 17px; color: var(--muted); margin-top: 6px; }
+  .stack { margin-left: auto; text-align: right; font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .stack b { color: var(--ink); font-size: 13px; }
+
+  .row { display: grid; gap: 16px; margin-bottom: 16px; }
+  .r1 { grid-template-columns: 1fr 1.35fr .95fr; }
+  .r3 { grid-template-columns: 1.15fr 1fr 1fr; }
+
+  .panel { background: var(--card); border: 1.5px solid var(--line); border-radius: 14px; padding: 14px 16px 16px; position: relative; }
+  .panel h2 { font-size: 15px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .num { width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: #fff; background: var(--orange); flex: none; }
+  .p-orange { border-color: #f1c39f; } .p-orange h2 { color: var(--orange-deep); }
+  .p-violet { border-color: #cfcdec; } .p-violet h2 { color: var(--violet); } .p-violet .num { background: var(--violet); }
+  .p-green { border-color: #b9dcc9; } .p-green h2 { color: var(--green); } .p-green .num { background: var(--green); }
+  .p-red { border-color: #ecc1ba; } .p-red h2 { color: var(--red); } .p-red .num { background: var(--red); }
+
+  .lead { font-size: 14.5px; margin-bottom: 8px; }
+  .lead b { color: var(--orange-deep); }
+  .pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .pill { font-size: 12px; font-weight: 600; padding: 4px 9px; border-radius: 999px; background: var(--peach); color: var(--orange-deep); }
+  .pill.g { background: var(--mint); color: var(--green); }
+  .map { display: grid; gap: 5px; margin-top: 8px; font-size: 12.5px; color: var(--muted); }
+  .map div { display: grid; grid-template-columns: 158px 18px 1fr; align-items: center; }
+  .map .pill { justify-self: start; }
+  .map i { font-style: normal; color: var(--orange); font-weight: 800; }
+  .map b { color: #fff; background: var(--orange); border-radius: 4px; padding: 0 5px; font-size: 11px; }
+  .watch { margin-top: 10px; background: var(--rose); border-radius: 10px; padding: 8px 10px; }
+  .watch h3 { font-size: 12.5px; font-weight: 800; color: var(--red); letter-spacing: .05em; text-transform: uppercase; margin-bottom: 3px; }
+  .watch li { font-size: 12.5px; margin-left: 16px; }
+
+  table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12.5px; }
+  th { text-align: left; font-weight: 700; padding: 7px 8px; font-size: 12.5px; }
+  th.c1 { background: #f3ece3; border-radius: 8px 0 0 0; }
+  th.c2 { background: #efeee9; color: #5b5550; }
+  th.c3 { background: var(--lav); color: var(--violet); }
+  th.c4 { background: var(--apricot); color: var(--orange-deep); border-radius: 0 8px 0 0; }
+  td { padding: 6px 8px; border-bottom: 1px solid #f0e6da; vertical-align: top; }
+  td:first-child { font-weight: 700; color: var(--muted); white-space: nowrap; }
+  td:last-child { background: #fff4ea; font-weight: 600; }
+  tr:last-child td { border-bottom: none; }
+
+  .use { margin-bottom: 9px; }
+  .use h3 { font-size: 13.5px; font-weight: 700; margin-bottom: 4px; }
+  .use h3 em { font-style: normal; padding: 1px 7px; border-radius: 6px; }
+  .use ul { list-style: none; display: grid; gap: 2px; }
+  .use li { font-size: 12.8px; padding-left: 20px; position: relative; }
+  .use li::before { content: ""; position: absolute; left: 2px; top: 3px; width: 11px; height: 11px; border-radius: 3px; border: 1.6px solid currentColor; }
+  .use li::after { content: ""; position: absolute; left: 5px; top: 5px; width: 5px; height: 3px; border-left: 1.8px solid currentColor; border-bottom: 1.8px solid currentColor; transform: rotate(-45deg); }
+  .u-lc li { color: var(--orange-deep); } .u-lc li span, .u-pz li span, .u-no li span { color: var(--ink); }
+  .u-pz li { color: var(--violet); } .u-no li { color: var(--muted); }
+  .note { background: var(--butter); border: 1.5px dashed #e3c66a; border-radius: 10px; padding: 7px 10px; font-size: 12.5px; }
+
+  .mechs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .mech { background: #fffaf4; border: 1px solid #f0e2d2; border-radius: 12px; padding: 10px 10px 8px; }
+  .mech h3 { font-size: 13.5px; font-weight: 700; display: flex; gap: 7px; align-items: baseline; margin-bottom: 2px; }
+  .mech h3 i { font-style: normal; color: var(--orange); font-weight: 800; }
+  .mech p { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .mech p b { color: var(--ink); }
+  svg text { font-family: Inter, sans-serif; }
+
+  pre { font-family: 'JetBrains Mono', monospace; font-size: 12.2px; line-height: 1.55; background: #2d2622; color: #f3e9dd; border-radius: 10px; padding: 12px 14px; }
+  pre .k { color: #ffb37a; } pre .c { color: #a8998c; } pre .s { color: #b9e3c8; }
+
+  .cost { display: grid; gap: 8px; }
+  .cost-row { display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: start; }
+  .cost-row .ic { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; }
+  .cost-row b { font-size: 13px; } .cost-row div { font-size: 12.5px; }
+  .ok { margin-top: 9px; display: grid; gap: 6px; }
+  .ok div { font-size: 12.5px; border-radius: 8px; padding: 6px 9px; }
+
+  .take { list-style: none; display: grid; gap: 5px; }
+  .take li { font-size: 13px; padding-left: 22px; position: relative; }
+  .take li::before { content: ""; position: absolute; left: 0; top: 2px; width: 14px; height: 14px; border-radius: 4px; background: var(--mint); border: 1.5px solid var(--green); }
+  .take li::after { content: ""; position: absolute; left: 4px; top: 5px; width: 6px; height: 3px; border-left: 2px solid var(--green); border-bottom: 2px solid var(--green); transform: rotate(-45deg); }
+
+  footer { display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px; }
+  footer div { border-radius: 12px; padding: 10px 16px; font-size: 14px; }
+  .f1 { background: var(--peach); border: 1.5px solid #f1c39f; }
+  .f1 b { color: var(--orange-deep); }
+  .f2 { background: var(--mint); border: 1.5px dashed #9fcdb4; }
+  .f2 b { color: var(--green); }
+</style>
+<style>
+  .r1 { grid-template-columns: 1fr 1.3fr 1fr; }
+  td code, .map code { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; }
+  .map div { grid-template-columns: 150px 18px 1fr; }
+  pre, code { font-variant-ligatures: none; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
+  .stats div { background: #fffaf4; border: 1px solid #f0e2d2; border-radius: 10px; padding: 8px 6px; text-align: center; }
+  .stats b { display: block; font-size: 24px; font-weight: 800; color: var(--orange-deep); line-height: 1.1; }
+  .stats span { font-size: 11px; color: var(--muted); }
+  .stats .bad b { color: var(--red); }
+  .cap { font-size: 11px; color: var(--muted); font-style: italic; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="tag">SPARK APP DOCTOR · 1/3</div>
+  <div>
+    <h1>Is my Spark app <span>over-provisioned?</span></h1>
+    <p>Two ratios Spark already records: how busy the cores were, and how much memory was touched.</p>
+  </div>
+  <div class="stack"><b>Spark UI · REST /api/v1</b><br>Live UI :4040 · History Server :18080<br>Field names: Spark 3.5 – 4.2</div>
+</header>
+
+<div class="row r1">
+
+  <section class="panel p-orange">
+    <h2><span class="num">1</span>The two ratios</h2>
+    <p class="lead"><b>Slot utilisation:</b> share of the core time you held that ran tasks. <b>Heap headroom:</b> share of the heap you asked for that was ever used.</p>
+    <svg viewBox="0 0 470 150" width="100%" role="img" aria-label="Executor slots with busy and idle time, and a heap bar with the peak marked at one third">
+      <text x="4" y="14" font-size="11.5" font-weight="700" fill="#b9531a">4 slots × uptime</text>
+      <rect x="4" y="22" width="250" height="88" rx="6" fill="#fff" stroke="#e6d9ca"/>
+      <g fill="#e8742a">
+        <rect x="8" y="27" width="70" height="17" rx="2"/><rect x="8" y="48" width="56" height="17" rx="2"/><rect x="8" y="69" width="80" height="17" rx="2"/><rect x="8" y="90" width="30" height="17" rx="2"/>
+        <rect x="170" y="27" width="50" height="17" rx="2"/><rect x="170" y="48" width="78" height="17" rx="2"/>
+      </g>
+      <rect x="96" y="24" width="66" height="84" fill="#b8402f" fill-opacity=".1"/>
+      <text x="129" y="70" text-anchor="middle" font-size="9.5" fill="#b8402f" font-weight="600">driver</text>
+      <text x="129" y="82" text-anchor="middle" font-size="9.5" fill="#b8402f">gap</text>
+      <text x="129" y="128" text-anchor="middle" font-size="11" fill="#2b2420"><tspan font-weight="700" fill="#b9531a">orange</tspan> ÷ box = utilisation</text>
+      <text x="300" y="14" font-size="11.5" font-weight="700" fill="#5a58a8">Heap (16g)</text>
+      <rect x="300" y="22" width="40" height="88" rx="5" fill="#fff" stroke="#cfcdec"/>
+      <rect x="300" y="81" width="40" height="29" rx="5" fill="#5a58a8" fill-opacity=".55"/>
+      <path d="M294 81H346" stroke="#b8402f" stroke-width="2" stroke-dasharray="4 3"/>
+      <text x="352" y="85" font-size="10.5" fill="#b8402f" font-weight="700">peak 5.3 GiB</text>
+      <text x="352" y="99" font-size="10" fill="#6d625a">= 33% of heap</text>
+      <text x="352" y="40" font-size="10" fill="#6d625a">never touched</text>
+      <text x="300" y="128" font-size="11" fill="#2b2420">JVMHeapMemory ÷ heap</text>
+      <text x="4" y="146" font-size="10" fill="#6d625a" font-style="italic">Scenario: 40 executors × 4 cores × 16g, 60 min wall time</text>
+    </svg>
+    <div class="map">
+      <div><span class="pill">Slot utilisation</span><i>←</i><span><code>totalDuration ÷ (uptime × totalCores)</code></span></div>
+      <div><span class="pill">Heap headroom</span><i>←</i><span><code>JVMHeapMemory ÷ spark.executor.memory</code></span></div>
+      <div><span class="pill g">Driver gaps</span><i>←</i><span>wall time not covered by any stage</span></div>
+    </div>
+    <div class="stats">
+      <div><b>160</b><span>core-hours held</span></div>
+      <div><b>28.8</b><span>core-hours used</span></div>
+      <div class="bad"><b>18%</b><span>slot utilisation</span></div>
+      <div class="bad"><b>33%</b><span>peak heap / heap</span></div>
+    </div>
+    <p class="cap">Illustrative figures: assumed, not measured.</p>
+  </section>
+
+  <section class="panel p-violet">
+    <h2><span class="num">2</span>Where to find each number</h2>
+    <table>
+      <tr><th class="c1">What</th><th class="c3">Spark UI</th><th class="c4">REST field</th></tr>
+      <tr><td>Cores</td><td>Executors → Cores</td><td><code>totalCores</code></td></tr>
+      <tr><td>Uptime</td><td>Executors → Add / Remove Time · Jobs → Event Timeline</td><td><code>addTime</code>, <code>removeTime</code></td></tr>
+      <tr><td>Task + GC time</td><td>Executors → Task Time (GC Time)</td><td><code>totalDuration</code>, <code>totalGCTime</code></td></tr>
+      <tr><td>Peak heap</td><td>Show Additional Metrics → Peak JVM Memory</td><td><code>peakMemoryMetrics.JVMHeapMemory</code></td></tr>
+      <tr><td>Peak execution</td><td>→ Peak Execution Memory</td><td><code>.OnHeapExecutionMemory</code></td></tr>
+      <tr><td>Python workers</td><td>needs processTreeMetrics</td><td><code>.ProcessTreePythonRSSMemory</code></td></tr>
+      <tr><td>Executor lost</td><td>→ Exec Loss Reason</td><td><code>removeReason</code></td></tr>
+      <tr><td>Configured memory</td><td>Environment → Spark Properties</td><td><code>/environment</code></td></tr>
+      <tr><td>Stage spans</td><td>Stages tab</td><td><code>submissionTime</code>, <code>completionTime</code></td></tr>
+    </table>
+    <div class="note" style="margin-top:8px"><b>Use <code>/allexecutors</code></b>, not <code>/executors</code> (active only). <b>/metrics/json</b> holds driver gauges, not executor busyness.</div>
+  </section>
+
+  <section class="panel p-green">
+    <h2><span class="num">3</span>What to cut</h2>
+    <div class="use u-lc"><h3><em style="background:#fde6d3;color:#b9531a">Cut executors</em> when</h3>
+      <ul><li><span>Utilisation low and heap peak low</span></li><li><span>Few driver gaps on the timeline</span></li></ul></div>
+    <div class="use u-pz"><h3><em style="background:#e6e5f6;color:#5a58a8">Cut memory per executor</em> when</h3>
+      <ul><li><span>Cores busy, heap peak low</span></li><li><span>No spill, GC not shaded red</span></li></ul></div>
+    <div class="use u-lc"><h3><em style="background:#fde6d3;color:#b9531a">Fewer cores, same memory</em> when</h3>
+      <ul><li><span>Cores idle, heap peak high</span></li></ul></div>
+    <div class="use u-no"><h3><em style="background:#efeee9;color:#5b5550">Don't resize</em> when</h3>
+      <ul><li><span>Idle time is driver gaps or one slow task</span></li><li><span>Streaming latency or spot headroom needs it</span></li></ul></div>
+    <div class="note"><b>Thresholds are starting points</b> (e.g. under ~40% busy, under ~50% heap). Tune on your own jobs.</div>
+  </section>
+</div>
+
+<section class="panel p-orange" style="margin-bottom:16px">
+  <h2><span class="num">4</span>How each number is built</h2>
+  <div class="mechs">
+
+    <div class="mech">
+      <h3><i>A</i>Slots held vs slots used</h3>
+      <svg viewBox="0 0 270 132" width="100%" role="img" aria-label="An executor holds its slots from addTime to removeTime; summed task durations fill part of that area">
+        <rect x="10" y="14" width="250" height="72" rx="4" fill="#fff" stroke="#e6d9ca"/>
+        <path d="M10 32H260M10 50H260M10 68H260" stroke="#f0e6da"/>
+        <g fill="#e8742a"><rect x="12" y="16" width="90" height="14"/><rect x="12" y="34" width="60" height="14"/><rect x="12" y="52" width="110" height="14"/><rect x="140" y="16" width="80" height="14"/><rect x="140" y="70" width="40" height="14"/></g>
+        <text x="10" y="102" font-size="9.5" font-family="JetBrains Mono, monospace" fill="#6d625a">addTime</text>
+        <text x="260" y="102" text-anchor="end" font-size="9.5" font-family="JetBrains Mono, monospace" fill="#6d625a">removeTime</text>
+        <text x="135" y="122" text-anchor="middle" font-size="10" fill="#2b2420">Σ task time ÷ (uptime × cores)</text>
+      </svg>
+      <p><b>totalDuration</b> sums tasks, so 4 parallel 10 s tasks count as 40 s. Divide by uptime × cores.</p>
+    </div>
+
+    <div class="mech">
+      <h3><i>B</i>Three shapes of idle</h3>
+      <svg viewBox="0 0 270 132" width="100%" role="img" aria-label="Idle slots from too many slots, from a long tail task, and from driver gaps between stages">
+        <g font-size="10" font-weight="700"><text x="44" y="12" text-anchor="middle" fill="#b9531a">too many slots</text><text x="135" y="12" text-anchor="middle" fill="#5a58a8">long tail</text><text x="226" y="12" text-anchor="middle" fill="#b8402f">driver gap</text></g>
+        <g fill="#fff" stroke="#e6d9ca"><rect x="6" y="20" width="78" height="64" rx="3"/><rect x="96" y="20" width="78" height="64" rx="3"/><rect x="187" y="20" width="78" height="64" rx="3"/></g>
+        <g fill="#e8742a"><rect x="8" y="23" width="50" height="12"/><rect x="8" y="38" width="34" height="12"/></g>
+        <g fill="#5a58a8"><rect x="98" y="23" width="30" height="12"/><rect x="98" y="38" width="26" height="12"/><rect x="98" y="53" width="32" height="12"/><rect x="98" y="68" width="74" height="12"/></g>
+        <g fill="#b8402f"><rect x="189" y="23" width="18" height="12"/><rect x="189" y="38" width="16" height="12"/><rect x="189" y="53" width="18" height="12"/><rect x="243" y="23" width="20" height="12"/><rect x="243" y="38" width="20" height="12"/><rect x="243" y="53" width="18" height="12"/></g>
+        <g font-size="9.5" text-anchor="middle" fill="#2b2420"><text x="44" y="100">fewer tasks</text><text x="44" y="112">than slots</text><text x="135" y="100">one slow task</text><text x="135" y="112">holds the stage</text><text x="226" y="100">collect, listing,</text><text x="226" y="112">Python on driver</text></g>
+        <g font-size="9.5" font-weight="700" text-anchor="middle"><text x="44" y="127" fill="#2f7d5a">cut executors</text><text x="135" y="127" fill="#5a58a8">Part 2: skew</text><text x="226" y="127" fill="#b8402f">fix the code</text></g>
+      </svg>
+      <p>Only the first is a <b>sizing problem</b>. Check the <b>Event Timeline</b> first.</p>
+    </div>
+
+    <div class="mech">
+      <h3><i>C</i>Executor memory layout</h3>
+      <svg viewBox="0 0 270 132" width="100%" role="img" aria-label="Container memory: heap with 300 MiB reserved, user memory and unified region, plus overhead">
+        <rect x="6" y="18" width="200" height="36" fill="none" stroke="#2b2420" stroke-width="1.3"/>
+        <rect x="6" y="18" width="12" height="36" fill="#c9c2b4"/>
+        <rect x="18" y="18" width="72" height="36" fill="#efeee9"/>
+        <rect x="90" y="18" width="58" height="36" fill="#e6e5f6"/>
+        <rect x="148" y="18" width="58" height="36" fill="#cfcdec"/>
+        <rect x="206" y="18" width="58" height="36" fill="#fde6d3" stroke="#e8742a"/>
+        <g font-size="9" text-anchor="middle" fill="#2b2420"><text x="54" y="40">user</text><text x="119" y="40">storage</text><text x="177" y="40">execution</text><text x="235" y="40">overhead</text></g>
+        <path d="M90 62H206" stroke="#5a58a8" stroke-width="2"/><text x="200" y="74" text-anchor="end" font-size="9.5" fill="#5a58a8" font-weight="600">M = (heap − 300 MiB) × 0.6</text>
+        <path d="M6 84H206" stroke="#2b2420" stroke-width="2"/><text x="106" y="96" text-anchor="middle" font-size="9.5" fill="#2b2420" font-weight="600">heap = spark.executor.memory</text>
+        <text x="235" y="66" text-anchor="middle" font-size="9" fill="#b9531a">JVM native,</text><text x="235" y="77" text-anchor="middle" font-size="9" fill="#b9531a">Python</text>
+        <text x="6" y="118" font-size="9.5" fill="#6d625a">container = memory + overhead (+ offHeap + pyspark)</text>
+      </svg>
+      <p>Each region has its own <b>peak metric</b>. Overhead defaults to <b>10%</b> of executor memory, with a minimum.</p>
+    </div>
+
+    <div class="mech">
+      <h3><i>D</i>Pick the right denominator</h3>
+      <svg viewBox="0 0 270 132" width="100%" role="img" aria-label="The same 5.3 GiB peak is 33 percent of the heap but 56 percent of maxMemory">
+        <text x="6" y="14" font-size="10" fill="#2b2420" font-weight="700">peak heap 5.3 GiB ÷ …</text>
+        <text x="6" y="38" font-size="10" fill="#2f7d5a" font-weight="700">heap 16 GiB</text>
+        <rect x="90" y="28" width="170" height="14" rx="3" fill="#f3ece3"/><rect x="90" y="28" width="56" height="14" rx="3" fill="#2f7d5a"/>
+        <text x="152" y="39" font-size="10" fill="#2f7d5a" font-weight="700">33% ✓</text>
+        <text x="6" y="70" font-size="10" fill="#b8402f" font-weight="700">maxMemory 9.4</text>
+        <rect x="90" y="60" width="170" height="14" rx="3" fill="#f3ece3"/><rect x="90" y="60" width="95" height="14" rx="3" fill="#b8402f"/>
+        <text x="190" y="71" font-size="10" fill="#b8402f" font-weight="700">56% ✗</text>
+        <text x="6" y="98" font-size="9.5" fill="#6d625a">maxMemory = storage/execution region, not heap</text>
+        <text x="6" y="114" font-size="9.5" fill="#6d625a">peaks sampled per heartbeat (10 s default)</text>
+      </svg>
+      <p>Heap peak ÷ <b>spark.executor.memory</b>. Execution peak ÷ <b>maxMemory</b>.</p>
+    </div>
+
+  </div>
+</section>
+
+<div class="row r3">
+  <section class="panel p-violet">
+    <h2><span class="num">5</span>In code</h2>
+<pre><span class="c"># APP = .../api/v1/applications/&lt;id&gt;</span>
+ex = [e <span class="k">for</span> e <span class="k">in</span> get(<span class="s">"/allexecutors"</span>)
+      <span class="k">if</span> e[<span class="s">"id"</span>] != <span class="s">"driver"</span>]
+<span class="k">for</span> e <span class="k">in</span> ex:
+    gone = e.get(<span class="s">"removeTime"</span>) <span class="k">or</span> app_end
+    slot_ms += uptime(e, gone) * e[<span class="s">"totalCores"</span>]
+    busy_ms += e[<span class="s">"totalDuration"</span>]
+
+util = busy_ms / slot_ms
+heap = to_bytes(props[<span class="s">"spark.executor.memory"</span>])
+peak = max(e[<span class="s">"peakMemoryMetrics"</span>][<span class="s">"JVMHeapMemory"</span>]
+           <span class="k">for</span> e <span class="k">in</span> ex) / heap</pre>
+  </section>
+
+  <section class="panel p-red">
+    <h2><span class="num">6</span>Before you trust the numbers</h2>
+    <div class="cost">
+      <div class="cost-row"><span class="ic" style="background:#fde6d3"><svg width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="6" fill="none" stroke="#b9531a" stroke-width="1.8"/><path d="M9 5v4l3 2" fill="none" stroke="#b9531a" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>Peaks are sampled</b><br>Updated per heartbeat. Set <code>metrics.pollingInterval</code> for faster polling.</div></div>
+      <div class="cost-row"><span class="ic" style="background:#e6e5f6"><svg width="18" height="18" viewBox="0 0 18 18"><path d="M4 14V6l5-3 5 3v8z" fill="none" stroke="#5a58a8" stroke-width="1.8" stroke-linejoin="round"/></svg></span><div><b>Python is invisible by default</b><br><code>processTreeMetrics.enabled=true</code> for PySpark.</div></div>
+      <div class="cost-row"><span class="ic" style="background:#dcefe5"><svg width="18" height="18" viewBox="0 0 18 18"><path d="M3 5h12M3 9h12M3 13h7" fill="none" stroke="#2f7d5a" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>Stages get dropped</b><br>UI keeps <code>retainedStages</code> (1000). Use the History Server.</div></div>
+    </div>
+    <div class="ok">
+      <div style="background:#dcefe5"><b style="color:#2f7d5a">Dynamic allocation:</b> use each executor's own uptime.</div>
+      <div style="background:#e6e5f6"><b style="color:#5a58a8">Cached data</b> pins executors by default.</div>
+    </div>
+  </section>
+
+  <section class="panel p-green">
+    <h2><span class="num">7</span>Key takeaways</h2>
+    <ul class="take">
+      <li>Over-provisioning = <b>low busy slots + low heap peak</b></li>
+      <li>Read both from <b>/allexecutors</b> + <b>/environment</b></li>
+      <li>Split idle time: <b>driver gaps</b> aren't a sizing problem</li>
+      <li>Divide heap peak by <b>executor memory</b>, not maxMemory</li>
+      <li>Change <b>one dimension</b> at a time</li>
+    </ul>
+    <div class="watch"><h3>Common mistakes</h3><ul>
+      <li><code>/executors</code>: misses removed executors</li>
+      <li>App duration as executor uptime</li>
+      <li>Cutting executors when one task is skewed</li>
+    </ul></div>
+  </section>
+</div>
+
+<footer>
+  <div class="f1"><b>Rule of thumb:</b> cut one step at a time on the same input. Stop when wall time, spill or GC moves.</div>
+  <div class="f2"><b>Verify:</b> utilisation rises; wall time and spill stay flat; no Exec Loss Reason.</div>
+</footer>
+
+</body>
+</html>
