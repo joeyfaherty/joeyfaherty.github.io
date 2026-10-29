@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Parquet Under the Hood Hero</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fbf6ef; --ink: #2b2420; --muted: #6d625a; --line: #e6d9ca;
+    --orange: #e8742a; --orange-deep: #b9531a; --peach: #fde6d3; --apricot: #fbd4b2;
+    --mint: #dcefe5; --green: #2f7d5a; --lav: #e6e5f6; --violet: #5a58a8;
+    --butter: #fff1c7; --rose: #f8dcd8; --red: #b8402f; --card: #fffdf9;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { width: 1600px; background: var(--bg); color: var(--ink); font-family: Inter, sans-serif; font-size: 14px; line-height: 1.35; padding: 26px 28px 22px; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  header { display: flex; align-items: center; gap: 22px; margin-bottom: 18px; }
+  .tag { border: 2px solid var(--orange-deep); color: var(--orange-deep); font-weight: 800; letter-spacing: .12em; font-size: 13px; padding: 7px 12px; border-radius: 8px; transform: rotate(-4deg); background: var(--peach); }
+  header h1 { font-size: 40px; font-weight: 800; letter-spacing: -.01em; line-height: 1.05; }
+  header h1 span { color: var(--orange); }
+  header p { font-size: 17px; color: var(--muted); margin-top: 6px; }
+  .stack { margin-left: auto; text-align: right; font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .stack b { color: var(--ink); font-size: 13px; }
+
+  .row { display: grid; gap: 16px; margin-bottom: 16px; }
+  .r1 { grid-template-columns: 1fr 1.35fr .95fr; }
+  .r3 { grid-template-columns: 1.15fr 1fr 1fr; }
+
+  .panel { background: var(--card); border: 1.5px solid var(--line); border-radius: 14px; padding: 14px 16px 16px; position: relative; }
+  .panel h2 { font-size: 15px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .num { width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: #fff; background: var(--orange); flex: none; }
+  .p-orange { border-color: #f1c39f; } .p-orange h2 { color: var(--orange-deep); }
+  .p-violet { border-color: #cfcdec; } .p-violet h2 { color: var(--violet); } .p-violet .num { background: var(--violet); }
+  .p-green { border-color: #b9dcc9; } .p-green h2 { color: var(--green); } .p-green .num { background: var(--green); }
+  .p-red { border-color: #ecc1ba; } .p-red h2 { color: var(--red); } .p-red .num { background: var(--red); }
+
+  .lead { font-size: 14.5px; margin-bottom: 8px; }
+  .lead b { color: var(--orange-deep); }
+  .pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .pill { font-size: 12px; font-weight: 600; padding: 4px 9px; border-radius: 999px; background: var(--peach); color: var(--orange-deep); }
+  .pill.g { background: var(--mint); color: var(--green); }
+  .map { display: grid; gap: 5px; margin-top: 8px; font-size: 12.5px; color: var(--muted); }
+  .map div { display: grid; grid-template-columns: 158px 18px 1fr; align-items: center; }
+  .map .pill { justify-self: start; }
+  .map i { font-style: normal; color: var(--orange); font-weight: 800; }
+  .map b { color: #fff; background: var(--orange); border-radius: 4px; padding: 0 5px; font-size: 11px; }
+  .watch { margin-top: 10px; background: var(--rose); border-radius: 10px; padding: 8px 10px; }
+  .watch h3 { font-size: 12.5px; font-weight: 800; color: var(--red); letter-spacing: .05em; text-transform: uppercase; margin-bottom: 3px; }
+  .watch li { font-size: 12.5px; margin-left: 16px; }
+
+  table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12.5px; }
+  th { text-align: left; font-weight: 700; padding: 7px 8px; font-size: 12.5px; }
+  th.c1 { background: #f3ece3; border-radius: 8px 0 0 0; }
+  th.c2 { background: #efeee9; color: #5b5550; }
+  th.c3 { background: var(--lav); color: var(--violet); }
+  th.c4 { background: var(--apricot); color: var(--orange-deep); border-radius: 0 8px 0 0; }
+  td { padding: 6px 8px; border-bottom: 1px solid #f0e6da; vertical-align: top; }
+  td:first-child { font-weight: 700; color: var(--muted); white-space: nowrap; }
+  td:last-child { background: #fff4ea; font-weight: 600; }
+  tr:last-child td { border-bottom: none; }
+
+  .use { margin-bottom: 9px; }
+  .use h3 { font-size: 13.5px; font-weight: 700; margin-bottom: 4px; }
+  .use h3 em { font-style: normal; padding: 1px 7px; border-radius: 6px; }
+  .use ul { list-style: none; display: grid; gap: 2px; }
+  .use li { font-size: 12.8px; padding-left: 20px; position: relative; }
+  .use li::before { content: ""; position: absolute; left: 2px; top: 3px; width: 11px; height: 11px; border-radius: 3px; border: 1.6px solid currentColor; }
+  .use li::after { content: ""; position: absolute; left: 5px; top: 5px; width: 5px; height: 3px; border-left: 1.8px solid currentColor; border-bottom: 1.8px solid currentColor; transform: rotate(-45deg); }
+  .u-lc li { color: var(--orange-deep); } .u-lc li span, .u-pz li span, .u-no li span { color: var(--ink); }
+  .u-pz li { color: var(--violet); } .u-no li { color: var(--muted); }
+  .note { background: var(--butter); border: 1.5px dashed #e3c66a; border-radius: 10px; padding: 7px 10px; font-size: 12.5px; }
+
+  .mechs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .mech { background: #fffaf4; border: 1px solid #f0e2d2; border-radius: 12px; padding: 10px 10px 8px; }
+  .mech h3 { font-size: 13.5px; font-weight: 700; display: flex; gap: 7px; align-items: baseline; margin-bottom: 2px; }
+  .mech h3 i { font-style: normal; color: var(--orange); font-weight: 800; }
+  .mech p { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .mech p b { color: var(--ink); }
+  svg text { font-family: Inter, sans-serif; }
+
+  pre { font-family: 'JetBrains Mono', monospace; font-size: 12.2px; line-height: 1.55; background: #2d2622; color: #f3e9dd; border-radius: 10px; padding: 12px 14px; }
+  pre .k { color: #ffb37a; } pre .c { color: #a8998c; } pre .s { color: #b9e3c8; }
+
+  .cost { display: grid; gap: 8px; }
+  .cost-row { display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: start; }
+  .cost-row .ic { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; }
+  .cost-row b { font-size: 13px; } .cost-row div { font-size: 12.5px; }
+  .ok { margin-top: 9px; display: grid; gap: 6px; }
+  .ok div { font-size: 12.5px; border-radius: 8px; padding: 6px 9px; }
+
+  .take { list-style: none; display: grid; gap: 5px; }
+  .take li { font-size: 13px; padding-left: 22px; position: relative; }
+  .take li::before { content: ""; position: absolute; left: 0; top: 2px; width: 14px; height: 14px; border-radius: 4px; background: var(--mint); border: 1.5px solid var(--green); }
+  .take li::after { content: ""; position: absolute; left: 4px; top: 5px; width: 6px; height: 3px; border-left: 2px solid var(--green); border-bottom: 2px solid var(--green); transform: rotate(-45deg); }
+
+  footer { display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px; }
+  footer div { border-radius: 12px; padding: 10px 16px; font-size: 14px; }
+  .f1 { background: var(--peach); border: 1.5px solid #f1c39f; }
+  .f1 b { color: var(--orange-deep); }
+  .f2 { background: var(--mint); border: 1.5px dashed #9fcdb4; }
+  .f2 b { color: var(--green); }
+</style>
+<style>
+  .r1 { grid-template-columns: 1.05fr 1.25fr .95fr; }
+  .mechs { grid-template-columns: repeat(5, 1fr); }
+  td code, .map code, .note code, .cost-row code, .ok code { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; }
+  .map div { grid-template-columns: 140px 18px 1fr; }
+  pre, code { font-variant-ligatures: none; }
+  .cap { font-size: 11px; color: var(--muted); font-style: italic; margin-top: 6px; }
+  .cli { display: grid; gap: 5px; font-size: 12.5px; }
+  .cli div { display: grid; grid-template-columns: 282px 1fr; gap: 8px; align-items: baseline; }
+  .cli code { white-space: nowrap; font-family: 'JetBrains Mono', monospace; font-size: 10.8px; background: #2d2622; color: #f3e9dd; border-radius: 5px; padding: 2px 6px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="tag">BOOTCAMP PREREQ</div>
+  <div>
+    <h1>Parquet under the hood: <span>how a query reads less</span></h1>
+    <p>Columnar layout, encodings, and statistics that let a reader skip what a query doesn't need.</p>
+  </div>
+  <div class="stack"><b>Spark 4.2.1 · parquet-java 1.17 · parquet-cli</b><br>The file format underneath Delta Lake and Iceberg</div>
+</header>
+
+<div class="row r1">
+
+  <section class="panel p-orange">
+    <h2><span class="num">1</span>What a Parquet file is</h2>
+    <p class="lead">Rows split into <b>row groups</b>; each column of a row group is a <b>column chunk</b> made of <b>pages</b>. A <b>footer</b> at the end holds the schema, offsets and min/max.</p>
+    <svg viewBox="0 0 470 168" width="100%" role="img" aria-label="File layout: PAR1, row groups with column chunks and pages, page index and bloom filters, footer, footer length, PAR1">
+      <rect x="4" y="4" width="462" height="16" rx="3" fill="#efeee9"/><text x="10" y="16" font-size="10.5" font-family="JetBrains Mono, monospace" fill="#6d625a">PAR1</text>
+      <rect x="4" y="24" width="462" height="56" rx="5" fill="#fff" stroke="#e8742a" stroke-width="1.4"/>
+      <text x="10" y="37" font-size="10.5" font-weight="700" fill="#b9531a">Row group 1</text>
+      <g font-size="9.5" fill="#6d625a"><text x="10" y="54">date</text><text x="10" y="72">country</text></g>
+      <rect x="56" y="44" width="12" height="13" fill="#b8402f" fill-opacity=".45"/>
+      <g fill="#e8742a" fill-opacity=".55"><rect x="70" y="44" width="56" height="13"/><rect x="128" y="44" width="56" height="13"/><rect x="186" y="44" width="56" height="13"/></g>
+      <rect x="56" y="62" width="12" height="13" fill="#b8402f" fill-opacity=".45"/>
+      <g fill="#e8742a" fill-opacity=".55"><rect x="70" y="62" width="80" height="13"/><rect x="152" y="62" width="80" height="13"/></g>
+      <text x="256" y="54" font-size="9.5" fill="#2b2420">← column chunk = pages</text>
+      <text x="256" y="72" font-size="9.5" fill="#b8402f">■ dictionary page</text>
+      <rect x="4" y="84" width="462" height="16" rx="3" fill="#fff" stroke="#e8742a" stroke-dasharray="4 3"/><text x="10" y="96" font-size="10" fill="#b9531a">Row group 2 … N</text>
+      <rect x="4" y="104" width="462" height="16" rx="3" fill="#e6e5f6"/><text x="10" y="116" font-size="10" fill="#5a58a8">Page index (column + offset index) · bloom filters</text>
+      <rect x="4" y="124" width="462" height="20" rx="3" fill="#fde6d3" stroke="#e8742a"/><text x="10" y="138" font-size="10.5" font-weight="700" fill="#b9531a">Footer: schema · row groups · offsets · min / max / null_count</text>
+      <rect x="4" y="148" width="462" height="16" rx="3" fill="#efeee9"/><text x="10" y="160" font-size="10.5" font-family="JetBrains Mono, monospace" fill="#6d625a">footer length · PAR1</text>
+    </svg>
+    <div class="map">
+      <div><span class="pill">Column pruning</span><i>←</i><span>column chunk offsets in footer</span></div>
+      <div><span class="pill">Smaller files</span><i>←</i><span>dictionary, RLE, delta + snappy/zstd</span></div>
+      <div><span class="pill">Data skipping</span><i>←</i><span>min/max, dictionary, bloom, page index</span></div>
+      <div><span class="pill g">Any engine</span><i>←</i><span>schema stored in the footer</span></div>
+    </div>
+    <div class="stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px">
+      <div style="background:#fffaf4;border:1px solid #f0e2d2;border-radius:10px;padding:7px 6px;text-align:center"><b style="display:block;font-size:21px;color:#b9531a">319 → 107</b><span style="font-size:11px;color:#6d625a">MiB: CSV → Parquet</span></div>
+      <div style="background:#fffaf4;border:1px solid #f0e2d2;border-radius:10px;padding:7px 6px;text-align:center"><b style="display:block;font-size:21px;color:#b9531a">2M → 38k</b><span style="font-size:11px;color:#6d625a">rows decoded, sorted file</span></div>
+      <div style="background:#fffaf4;border:1px solid #f0e2d2;border-radius:10px;padding:7px 6px;text-align:center"><b style="display:block;font-size:21px;color:#b9531a">51 / 53</b><span style="font-size:11px;color:#6d625a">row groups skipped by bloom</span></div>
+    </div>
+    <p class="cap">Measured on the post's 2M-row scenario.</p>
+  </section>
+
+  <section class="panel p-violet">
+    <h2><span class="num">2</span>Parquet vs the alternatives</h2>
+    <table>
+      <tr><th class="c1"></th><th class="c2">CSV / JSON</th><th class="c3">Avro</th><th class="c4">Parquet</th></tr>
+      <tr><td>Layout</td><td>Rows, text</td><td>Rows, binary</td><td>Columns, binary</td></tr>
+      <tr><td>Read 3 of 19 cols</td><td>Parse all 19</td><td>Decode all 19</td><td>Read 3 chunks</td></tr>
+      <tr><td>Schema</td><td>None / inferred</td><td>In the file</td><td>In the footer</td></tr>
+      <tr><td>Skip blocks</td><td>No</td><td>No</td><td>Min/max, dict, bloom, page index</td></tr>
+      <tr><td>Compression</td><td>Whole file</td><td>Per block</td><td>Per page, after encoding</td></tr>
+      <tr><td>Best at</td><td>Exchange</td><td>Streaming writes</td><td>Analytical scans</td></tr>
+    </table>
+    <div class="note" style="margin-top:8px"><b>Delta Lake and Iceberg store data as Parquet.</b> They add file-level min/max in their metadata, so whole files are skipped <b>before</b> any footer is opened.</div>
+  </section>
+
+  <section class="panel p-green">
+    <h2><span class="num">3</span>When to use what</h2>
+    <div class="use u-lc"><h3><em style="background:#fde6d3;color:#b9531a">Parquet</em> when</h3>
+      <ul><li><span>Scanning many rows, few columns</span></li><li><span>Write once, read many times</span></li></ul></div>
+    <div class="use u-pz"><h3><em style="background:#e6e5f6;color:#5a58a8">Delta / Iceberg</em> when</h3>
+      <ul><li><span>Updates, deletes, concurrent writers</span></li><li><span>Many files: skip by file stats</span></li></ul></div>
+    <div class="use u-no"><h3><em style="background:#efeee9;color:#5b5550">Avro / a database</em> when</h3>
+      <ul><li><span>One record at a time (Kafka, CDC)</span></li><li><span>Point lookups by key</span></li></ul></div>
+    <div class="note"><b>Skipping depends on sort order.</b> Sort or cluster on the main filter columns, or min/max ranges cover everything.</div>
+    <table style="margin-top:10px">
+      <tr><th class="c1">Default</th><th class="c4">Value</th></tr>
+      <tr><td>Row group</td><td>128 MB (parquet-java)</td></tr>
+      <tr><td>Page</td><td>1 MB or 20,000 rows</td></tr>
+      <tr><td>Codec</td><td>snappy (Spark) · zstd (Iceberg)</td></tr>
+      <tr><td>Bloom filter</td><td>off; enable per column</td></tr>
+    </table>
+  </section>
+</div>
+
+<section class="panel p-orange" style="margin-bottom:16px">
+  <h2><span class="num">4</span>Data skipping, coarse to fine: each answers "definitely not" or "maybe"</h2>
+  <div class="mechs">
+
+    <div class="mech">
+      <h3><i>a</i>Partition pruning</h3>
+      <svg viewBox="0 0 220 118" width="100%" role="img" aria-label="Only the directory for the filtered date is listed">
+        <g font-size="9.5" font-family="JetBrains Mono, monospace">
+          <text x="4" y="16" fill="#6d625a">events/</text>
+          <text x="14" y="34" fill="#c9c2b4">date=2026-09-30/</text>
+          <text x="14" y="52" fill="#b9531a" font-weight="700">date=2026-10-01/ ✓</text>
+          <text x="14" y="70" fill="#c9c2b4">date=2026-10-02/</text>
+          <text x="14" y="88" fill="#c9c2b4">… 362 more</text>
+        </g>
+        <text x="4" y="110" font-size="10" fill="#2b2420">files never opened</text>
+      </svg>
+      <p>Directory names. Table layout, <b>not Parquet</b>. Plan: <b>PartitionFilters</b>.</p>
+    </div>
+
+    <div class="mech">
+      <h3><i>b</i>Row group min/max</h3>
+      <svg viewBox="0 0 220 118" width="100%" role="img" aria-label="Unsorted row groups all span the year; sorted row groups have narrow ranges and only one crosses the predicate">
+        <text x="4" y="12" font-size="9.5" font-weight="700" fill="#b8402f">unsorted</text>
+        <g fill="#b8402f" fill-opacity=".35"><rect x="4" y="18" width="210" height="9"/><rect x="4" y="30" width="210" height="9"/><rect x="4" y="42" width="210" height="9"/></g>
+        <text x="4" y="66" font-size="9.5" font-weight="700" fill="#2f7d5a">sorted</text>
+        <g fill="#efeee9"><rect x="4" y="72" width="40" height="9"/><rect x="44" y="84" width="40" height="9"/><rect x="164" y="96" width="40" height="9"/></g>
+        <rect x="134" y="96" width="30" height="9" fill="#2f7d5a"/>
+        <path d="M150 14V108" stroke="#2b2420" stroke-width="1.5" stroke-dasharray="3 2"/>
+        <text x="150" y="117" font-size="8.5" text-anchor="middle" fill="#2b2420">2026-10-01</text>
+      </svg>
+      <p>Footer stats. Skips row groups only if data is <b>sorted or clustered</b>.</p>
+    </div>
+
+    <div class="mech">
+      <h3><i>c</i>Dictionary filter</h3>
+      <svg viewBox="0 0 220 118" width="100%" role="img" aria-label="Min/max AT to US says maybe; dictionary without IE says no">
+        <text x="4" y="16" font-size="10" fill="#2b2420">min/max <tspan font-family="JetBrains Mono, monospace">AT…US</tspan></text>
+        <text x="130" y="16" font-size="10" fill="#b8402f" font-weight="700">maybe</text>
+        <g font-size="9.5" font-family="JetBrains Mono, monospace" text-anchor="middle">
+          <rect x="4" y="30" width="36" height="18" fill="#fff" stroke="#5a58a8"/><text x="22" y="43">AT</text>
+          <rect x="44" y="30" width="36" height="18" fill="#fff" stroke="#5a58a8"/><text x="62" y="43">DE</text>
+          <rect x="84" y="30" width="36" height="18" fill="#fff" stroke="#5a58a8"/><text x="102" y="43">FR</text>
+          <rect x="124" y="30" width="36" height="18" fill="#fff" stroke="#5a58a8"/><text x="142" y="43">US</text>
+        </g>
+        <text x="4" y="68" font-size="10" fill="#2b2420">dictionary has no IE</text>
+        <text x="130" y="68" font-size="10" fill="#2f7d5a" font-weight="700">skip</text>
+        <text x="4" y="94" font-size="9.5" fill="#6d625a">needs every page</text>
+        <text x="4" y="106" font-size="9.5" fill="#6d625a">dictionary-encoded</text>
+      </svg>
+      <p>For <b>=</b> and <b>IN</b> on low-cardinality columns.</p>
+    </div>
+
+    <div class="mech">
+      <h3><i>d</i>Bloom filter</h3>
+      <svg viewBox="0 0 220 118" width="100%" role="img" aria-label="Hash picks a 256-bit block; eight bits checked, one is zero, so the value is absent">
+        <text x="4" y="14" font-size="9.5" font-family="JetBrains Mono, monospace" fill="#2b2420">xxHash64('u-4242')</text>
+        <rect x="4" y="24" width="210" height="18" fill="#fff" stroke="#e6d9ca"/>
+        <path d="M30 24V42M56 24V42M82 24V42M108 24V42M134 24V42M160 24V42M186 24V42" stroke="#e6d9ca"/>
+        <g fill="#5a58a8"><rect x="12" y="27" width="4" height="12"/><rect x="40" y="27" width="4" height="12"/><rect x="66" y="27" width="4" height="12"/><rect x="92" y="27" width="4" height="12"/><rect x="118" y="27" width="4" height="12"/><rect x="144" y="27" width="4" height="12"/><rect x="170" y="27" width="4" height="12"/></g>
+        <rect x="200" y="27" width="4" height="12" fill="none" stroke="#b8402f" stroke-width="1.5"/>
+        <text x="4" y="60" font-size="10" fill="#2b2420">one bit of 8 is 0 →</text>
+        <text x="110" y="60" font-size="10" fill="#2f7d5a" font-weight="700">definitely absent</text>
+        <text x="4" y="84" font-size="9.5" fill="#6d625a">no false negatives</text>
+        <text x="4" y="98" font-size="9.5" fill="#6d625a">~10 bits/value ≈ 1% false positives</text>
+        <text x="4" y="112" font-size="9.5" fill="#6d625a">off by default</text>
+      </svg>
+      <p>For <b>=</b> on <b>high-cardinality ids</b>, where min/max can't help.</p>
+    </div>
+
+    <div class="mech">
+      <h3><i>e</i>Page index</h3>
+      <svg viewBox="0 0 220 118" width="100%" role="img" aria-label="Column index picks one page; offset index maps its row range to pages of other columns">
+        <text x="4" y="12" font-size="9.5" fill="#6d625a">column index: min/max per page</text>
+        <g fill="#efeee9"><rect x="4" y="18" width="48" height="14"/><rect x="54" y="18" width="48" height="14"/><rect x="154" y="18" width="60" height="14"/></g>
+        <rect x="104" y="18" width="48" height="14" fill="#e8742a"/>
+        <text x="4" y="50" font-size="9.5" fill="#6d625a">offset index: same rows, other columns</text>
+        <g fill="#efeee9"><rect x="4" y="56" width="80" height="14"/><rect x="176" y="56" width="38" height="14"/><rect x="4" y="74" width="30" height="14"/><rect x="36" y="74" width="30" height="14"/><rect x="68" y="74" width="30" height="14"/><rect x="164" y="74" width="50" height="14"/></g>
+        <g fill="#e8742a" fill-opacity=".7"><rect x="86" y="56" width="88" height="14"/><rect x="100" y="74" width="30" height="14"/><rect x="132" y="74" width="30" height="14"/></g>
+        <path d="M104 14V92M152 14V92" stroke="#b8402f" stroke-dasharray="3 2"/>
+        <text x="4" y="110" font-size="9.5" fill="#6d625a">pages don't line up across columns</text>
+      </svg>
+      <p>Skips <b>pages inside</b> a surviving row group.</p>
+    </div>
+
+  </div>
+  <p class="cap" style="font-style:normal;color:#2b2420;margin-top:8px"><b>Then:</b> survivors are decompressed and decoded, and Spark re-checks the filter on every row (the <b>Filter</b> node above the scan).</p>
+</section>
+
+<div class="row r3">
+  <section class="panel p-violet">
+    <h2><span class="num">5</span>Reading the Spark plan</h2>
+<pre><span class="c">// Scala</span>
+spark.read.parquet(<span class="s">"events"</span>)
+  .where($<span class="s">"event_date"</span> === <span class="s">"2026-10-01"</span> &amp;&amp; $<span class="s">"country"</span> === <span class="s">"IE"</span>
+         &amp;&amp; upper($<span class="s">"device"</span>) === <span class="s">"IOS"</span>)
+  .select(<span class="s">"user_id"</span>, <span class="s">"country"</span>, <span class="s">"amount"</span>)
+  .explain(<span class="s">"formatted"</span>)
+
+<span class="k">PartitionFilters</span>: [event_date = 2026-10-01]  <span class="c">→ dirs</span>
+<span class="k">PushedFilters</span>: [IsNotNull(country), IsNotNull(device),
+                EqualTo(country,IE)]        <span class="c">→ blocks</span>
+<span class="k">ReadSchema</span>: user_id, country, device, amount
+<span class="k">Filter</span>: country = IE AND upper(device) = IOS  <span class="c">→ rows</span></pre>
+  </section>
+
+  <section class="panel p-red">
+    <h2><span class="num">6</span>Look inside with parquet-cli</h2>
+    <div class="cli">
+      <div><code>parquet meta f</code><span>row groups, encodings, <b>min/max</b></span></div>
+      <div><code>parquet pages f</code><span>every page; spot <b>dictionary fallback</b></span></div>
+      <div><code>parquet dictionary -c country f</code><span>what the dict filter checks</span></div>
+      <div><code>parquet column-index -c date f</code><span>page-level min/max + offsets</span></div>
+      <div><code>parquet bloom-filter -c user_id -v u-42 f</code><span>bloom answer per row group</span></div>
+      <div><code>parquet footer f</code><span>the whole footer as JSON</span></div>
+    </div>
+    <div class="ok">
+      <div style="background:#e6e5f6"><b style="color:#5a58a8">parquet-cli</b> replaces the deprecated Java <b>parquet-tools</b>.</div>
+      <div style="background:#dcefe5"><b style="color:#2f7d5a">Learn by diffing:</b> write sorted vs unsorted, compare <code>meta</code>.</div>
+    </div>
+  </section>
+
+  <section class="panel p-green">
+    <h2><span class="num">7</span>Key takeaways</h2>
+    <ul class="take">
+      <li>Footer first: <b>schema, offsets, min/max</b></li>
+      <li>Select few columns: <b>pruning</b> is free</li>
+      <li><b>Sort</b> on filter columns, or min/max skips nothing</li>
+      <li><b>Bloom filters</b> for equality on ids</li>
+      <li>Keep filter columns <b>bare</b>: no functions or casts</li>
+    </ul>
+    <div class="watch"><h3>Common mistakes</h3><ul>
+      <li>Reading <code>PushedFilters</code> as proof of skipping</li>
+      <li><code>upper(col)</code>, <code>year(date)</code> in filters</li>
+      <li>Thousands of tiny files, tiny row groups</li>
+      <li>Spark's default INT96 timestamps: no min/max</li>
+    </ul></div>
+  </section>
+</div>
+
+<footer>
+  <div class="f1"><b>Rule of thumb:</b> read few columns, filter on bare columns, and sort the data the way you filter it.</div>
+  <div class="f2"><b>Verify:</b> filters in <b>PushedFilters</b>; rows decoded drop; <code>parquet meta</code> ranges narrow.</div>
+</footer>
+
+</body>
+</html>
