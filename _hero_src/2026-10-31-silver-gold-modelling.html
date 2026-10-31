@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Silver Gold Modelling Hero</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fbf6ef; --ink: #2b2420; --muted: #6d625a; --line: #e6d9ca;
+    --orange: #e8742a; --orange-deep: #b9531a; --peach: #fde6d3; --apricot: #fbd4b2;
+    --mint: #dcefe5; --green: #2f7d5a; --lav: #e6e5f6; --violet: #5a58a8;
+    --butter: #fff1c7; --rose: #f8dcd8; --red: #b8402f; --card: #fffdf9;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { width: 1600px; background: var(--bg); color: var(--ink); font-family: Inter, sans-serif; font-size: 14px; line-height: 1.35; padding: 26px 28px 22px; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  header { display: flex; align-items: center; gap: 22px; margin-bottom: 18px; }
+  .tag { border: 2px solid var(--orange-deep); color: var(--orange-deep); font-weight: 800; letter-spacing: .12em; font-size: 13px; padding: 7px 12px; border-radius: 8px; transform: rotate(-4deg); background: var(--peach); }
+  header h1 { font-size: 40px; font-weight: 800; letter-spacing: -.01em; line-height: 1.05; }
+  header h1 span { color: var(--orange); }
+  header p { font-size: 17px; color: var(--muted); margin-top: 6px; }
+  .stack { margin-left: auto; text-align: right; font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .stack b { color: var(--ink); font-size: 13px; }
+
+  .row { display: grid; gap: 16px; margin-bottom: 16px; }
+  .r1 { grid-template-columns: 1fr 1.35fr .95fr; }
+  .r3 { grid-template-columns: 1.15fr 1fr 1fr; }
+
+  .panel { background: var(--card); border: 1.5px solid var(--line); border-radius: 14px; padding: 14px 16px 16px; position: relative; }
+  .panel h2 { font-size: 15px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .num { width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: #fff; background: var(--orange); flex: none; }
+  .p-orange { border-color: #f1c39f; } .p-orange h2 { color: var(--orange-deep); }
+  .p-violet { border-color: #cfcdec; } .p-violet h2 { color: var(--violet); } .p-violet .num { background: var(--violet); }
+  .p-green { border-color: #b9dcc9; } .p-green h2 { color: var(--green); } .p-green .num { background: var(--green); }
+  .p-red { border-color: #ecc1ba; } .p-red h2 { color: var(--red); } .p-red .num { background: var(--red); }
+
+  .lead { font-size: 14.5px; margin-bottom: 8px; }
+  .lead b { color: var(--orange-deep); }
+  .pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .pill { font-size: 12px; font-weight: 600; padding: 4px 9px; border-radius: 999px; background: var(--peach); color: var(--orange-deep); }
+  .pill.g { background: var(--mint); color: var(--green); }
+  .map { display: grid; gap: 5px; margin-top: 8px; font-size: 12.5px; color: var(--muted); }
+  .map div { display: grid; grid-template-columns: 158px 18px 1fr; align-items: center; }
+  .map .pill { justify-self: start; }
+  .map i { font-style: normal; color: var(--orange); font-weight: 800; }
+  .map b { color: #fff; background: var(--orange); border-radius: 4px; padding: 0 5px; font-size: 11px; }
+  .watch { margin-top: 10px; background: var(--rose); border-radius: 10px; padding: 8px 10px; }
+  .watch h3 { font-size: 12.5px; font-weight: 800; color: var(--red); letter-spacing: .05em; text-transform: uppercase; margin-bottom: 3px; }
+  .watch li { font-size: 12.5px; margin-left: 16px; }
+
+  table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12.5px; }
+  th { text-align: left; font-weight: 700; padding: 7px 8px; font-size: 12.5px; }
+  th.c1 { background: #f3ece3; border-radius: 8px 0 0 0; }
+  th.c2 { background: #efeee9; color: #5b5550; }
+  th.c3 { background: var(--lav); color: var(--violet); }
+  th.c4 { background: var(--apricot); color: var(--orange-deep); border-radius: 0 8px 0 0; }
+  td { padding: 6px 8px; border-bottom: 1px solid #f0e6da; vertical-align: top; }
+  td:first-child { font-weight: 700; color: var(--muted); white-space: nowrap; }
+  td:last-child { background: #fff4ea; font-weight: 600; }
+  tr:last-child td { border-bottom: none; }
+
+  .use { margin-bottom: 9px; }
+  .use h3 { font-size: 13.5px; font-weight: 700; margin-bottom: 4px; }
+  .use h3 em { font-style: normal; padding: 1px 7px; border-radius: 6px; }
+  .use ul { list-style: none; display: grid; gap: 2px; }
+  .use li { font-size: 12.8px; padding-left: 20px; position: relative; }
+  .use li::before { content: ""; position: absolute; left: 2px; top: 3px; width: 11px; height: 11px; border-radius: 3px; border: 1.6px solid currentColor; }
+  .use li::after { content: ""; position: absolute; left: 5px; top: 5px; width: 5px; height: 3px; border-left: 1.8px solid currentColor; border-bottom: 1.8px solid currentColor; transform: rotate(-45deg); }
+  .u-lc li { color: var(--orange-deep); } .u-lc li span, .u-pz li span, .u-no li span { color: var(--ink); }
+  .u-pz li { color: var(--violet); } .u-no li { color: var(--muted); }
+  .note { background: var(--butter); border: 1.5px dashed #e3c66a; border-radius: 10px; padding: 7px 10px; font-size: 12.5px; }
+
+  .mechs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  .mech { background: #fffaf4; border: 1px solid #f0e2d2; border-radius: 12px; padding: 10px 10px 8px; }
+  .mech h3 { font-size: 13.5px; font-weight: 700; display: flex; gap: 7px; align-items: baseline; margin-bottom: 2px; }
+  .mech h3 i { font-style: normal; color: var(--orange); font-weight: 800; }
+  .mech p { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .mech p b { color: var(--ink); }
+  svg text { font-family: Inter, sans-serif; }
+
+  pre { font-family: 'JetBrains Mono', monospace; font-size: 12.2px; line-height: 1.55; background: #2d2622; color: #f3e9dd; border-radius: 10px; padding: 12px 14px; }
+  pre .k { color: #ffb37a; } pre .c { color: #a8998c; } pre .s { color: #b9e3c8; }
+
+  .cost { display: grid; gap: 8px; }
+  .cost-row { display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: start; }
+  .cost-row .ic { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; }
+  .cost-row b { font-size: 13px; } .cost-row div { font-size: 12.5px; }
+  .ok { margin-top: 9px; display: grid; gap: 6px; }
+  .ok div { font-size: 12.5px; border-radius: 8px; padding: 6px 9px; }
+
+  .take { list-style: none; display: grid; gap: 5px; }
+  .take li { font-size: 13px; padding-left: 22px; position: relative; }
+  .take li::before { content: ""; position: absolute; left: 0; top: 2px; width: 14px; height: 14px; border-radius: 4px; background: var(--mint); border: 1.5px solid var(--green); }
+  .take li::after { content: ""; position: absolute; left: 4px; top: 5px; width: 6px; height: 3px; border-left: 2px solid var(--green); border-bottom: 2px solid var(--green); transform: rotate(-45deg); }
+
+  footer { display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px; }
+  footer div { border-radius: 12px; padding: 10px 16px; font-size: 14px; }
+  .f1 { background: var(--peach); border: 1.5px solid #f1c39f; }
+  .f1 b { color: var(--orange-deep); }
+  .f2 { background: var(--mint); border: 1.5px dashed #9fcdb4; }
+  .f2 b { color: var(--green); }
+</style>
+<style>
+  .r1 { grid-template-columns: 1.05fr 1.3fr .95fr; }
+  .grain td:first-child { font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 11.5px; }
+  .grain td:last-child { background: transparent; font-weight: 500; }
+  .grain td { padding: 4px 6px; font-size: 12px; }
+  .ctl { display: grid; gap: 4px; margin-top: 8px; }
+  .ctl div { font-size: 12.3px; background: #fffaf4; border: 1px solid #f0e2d2; border-radius: 7px; padding: 4px 8px; }
+  .ctl b { color: var(--red); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="tag">AT SCALE</div>
+  <div>
+    <h1>Silver &amp; Gold Modelling: <span>Nested or Exploded?</span></h1>
+    <p>One nested Kafka event, 2B a day, 10–20 entities inside. Keep silver 1:1 as the record; explode only what queries need.</p>
+  </div>
+  <div class="stack"><b>Databricks · Unity Catalog</b><br>Delta or managed Iceberg<br>Liquid clustering · VARIANT · MVs · metric views</div>
+</header>
+
+<!-- ROW 1 -->
+<div class="row r1">
+
+  <section class="panel p-orange">
+    <h2><span class="num">1</span>The decision</h2>
+    <p class="lead">Bronze stays raw and 1:1. In silver, <b>keep one nested row per event</b> and split out an entity only when queries <b>filter, join or aggregate at its grain</b>.</p>
+    <svg viewBox="0 0 480 150" width="100%" role="img" aria-label="Kafka to bronze1 raw to bronze2 typed to silver event, which feeds hot entity tables and gold">
+      <defs><marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#b9531a"/></marker></defs>
+      <g font-size="11" font-weight="600" fill="#2b2420" text-anchor="middle">
+        <rect x="2" y="50" width="62" height="44" rx="8" fill="#efeee9" stroke="#c9c2b4"/><text x="33" y="70">Kafka</text><text x="33" y="85" font-size="9.5" font-weight="400" fill="#6d625a">1 topic</text>
+        <rect x="80" y="50" width="76" height="44" rx="8" fill="#fff" stroke="#e6d9ca"/><text x="118" y="70">bronze1</text><text x="118" y="85" font-size="9.5" font-weight="400" fill="#6d625a">raw · offsets</text>
+        <rect x="172" y="50" width="76" height="44" rx="8" fill="#fff" stroke="#e6d9ca"/><text x="210" y="70">bronze2</text><text x="210" y="85" font-size="9.5" font-weight="400" fill="#6d625a">typed · 1:1</text>
+        <rect x="264" y="44" width="92" height="56" rx="8" fill="#fde6d3" stroke="#e8742a" stroke-width="2"/><text x="310" y="64" fill="#b9531a">silver.event</text><text x="310" y="78" font-size="9.5" font-weight="400" fill="#2b2420">2B rows/day</text><text x="310" y="91" font-size="9.5" font-weight="400" fill="#2b2420">structs + arrays</text>
+        <rect x="380" y="8" width="96" height="40" rx="8" fill="#e6e5f6" stroke="#5a58a8"/><text x="428" y="25" fill="#5a58a8">entity_items</text><text x="428" y="39" font-size="9.5" font-weight="400" fill="#2b2420">hot only · 100B/day</text>
+        <rect x="380" y="56" width="96" height="34" rx="8" fill="#fff" stroke="#c9c2b4" stroke-dasharray="4 3"/><text x="428" y="77" font-size="10" font-weight="400" fill="#6d625a">cold: stay nested</text>
+        <rect x="380" y="98" width="96" height="40" rx="8" fill="#dcefe5" stroke="#2f7d5a"/><text x="428" y="115" fill="#2f7d5a">gold</text><text x="428" y="129" font-size="9.5" font-weight="400" fill="#2b2420">facts · MVs · metrics</text>
+      </g>
+      <g stroke="#b9531a" stroke-width="1.8" fill="none">
+        <path d="M64 72H78" marker-end="url(#a1)"/><path d="M156 72H170" marker-end="url(#a1)"/><path d="M248 72H262" marker-end="url(#a1)"/>
+        <path d="M356 62L378 30" marker-end="url(#a1)"/><path d="M356 74H378" marker-end="url(#a1)"/><path d="M356 86L378 114" marker-end="url(#a1)"/>
+      </g>
+      <text x="240" y="146" text-anchor="middle" font-size="10.5" fill="#6d625a">One dedupe point · one rebuild from bronze1 · entities are pure functions of silver.event</text>
+    </svg>
+    <div class="map">
+      <div><span class="pill">1:1 sub-objects</span><i>←</i><span>keep as structs <b>A</b></span></div>
+      <div><span class="pill">Child-field filters</span><i>←</i><span>explode: arrays can't cluster <b>B</b></span></div>
+      <div><span class="pill">Every entity costs</span><i>←</i><span>writes, OPTIMIZE, checkpoints <b>C</b> <b>D</b></span></div>
+      <div><span class="pill g">Gold aggregates</span><i>←</i><span>MVs, incremental only on right shapes <b>E</b></span></div>
+    </div>
+  </section>
+
+  <section class="panel p-violet">
+    <h2><span class="num">2</span>Nested vs exploded vs hybrid</h2>
+    <table>
+      <tr><th class="c1"></th><th class="c2">A: Nested 1:1</th><th class="c3">B: Fully exploded</th><th class="c4">C: Hybrid</th></tr>
+      <tr><td>Rows / day</td><td>2B</td><td>2B + up to 100B × 10–20</td><td>2B + hot entities</td></tr>
+      <tr><td>Tables to run</td><td>1</td><td>10–20</td><td>1 + a few</td></tr>
+      <tr><td>Header-field filter</td><td>Fast (cluster)</td><td>Fast</td><td>Fast</td></tr>
+      <tr><td>Child-field filter</td><td>Scans column in every file</td><td>Fast (cluster)</td><td>Fast for hot entities</td></tr>
+      <tr><td>Child-grain aggregate</td><td>Explode per query</td><td>Plain GROUP BY</td><td>GROUP BY on hot</td></tr>
+      <tr><td>Write compute</td><td>One parse</td><td>+ explode + sort each</td><td>+ a few explodes</td></tr>
+      <tr><td>Replay a bug</td><td>One table</td><td>Every table, consistently</td><td>One table, re-derive</td></tr>
+      <tr><td>Schema change</td><td>One table</td><td>Many tables</td><td>One + touched entities</td></tr>
+      <tr><td>Gold population</td><td>Every job explodes</td><td>Joins entities</td><td>Joins hot, explodes cold</td></tr>
+    </table>
+  </section>
+
+  <section class="panel p-green">
+    <h2><span class="num">3</span>When to explode an entity?</h2>
+    <div class="use u-no"><h3><em style="background:#efeee9;color:#5b5550">Keep nested</em> when</h3>
+      <ul><li><span>It's 1:1 with the event (header, device, geo)</span></li><li><span>Read only after filtering on header fields</span></li><li><span>Rarely used or exploratory</span></li></ul></div>
+    <div class="use u-lc"><h3><em style="background:#fde6d3;color:#b9531a">Explode to a table</em> when</h3>
+      <ul><li><span>Queries filter or join on a child field</span></li><li><span>Many consumers aggregate at child grain</span></li><li><span>Exact keys needed downstream (posexplode)</span></li></ul></div>
+    <div class="use u-pz"><h3><em style="background:#e6e5f6;color:#5a58a8">Narrow entity table</em> when</h3>
+      <ul><li><span>Filters on a few child fields, wide reads rare</span></li><li><span>Child schema volatile: keys + VARIANT</span></li></ul></div>
+    <div class="note"><b>Hard limits:</b> ≤4 clustering keys · no array/map elements as keys · VARIANT not a key · no shredding inside arrays · MVs: no identity columns</div>
+  </section>
+</div>
+
+<!-- ROW 2 -->
+<section class="panel p-orange" style="margin-bottom:16px">
+  <h2><span class="num">4</span>Under the hood: five mechanisms</h2>
+  <div class="mechs">
+
+    <div class="mech">
+      <h3><i>A</i>Struct leaves are columns</h3>
+      <svg viewBox="0 0 270 132" width="100%" role="img" aria-label="A nested row's struct and array leaf fields are each stored as separate Parquet column chunks">
+        <rect x="6" y="8" width="258" height="34" rx="5" fill="#fff" stroke="#e6d9ca"/>
+        <text x="14" y="22" font-size="9.5" font-family="JetBrains Mono, monospace" fill="#2b2420">header{ts, cust} device{os}</text>
+        <text x="14" y="35" font-size="9.5" font-family="JetBrains Mono, monospace" fill="#2b2420">items[{sku, qty}] × 50</text>
+        <path d="M135 44V56" stroke="#b9531a" stroke-width="1.8"/>
+        <g font-size="8.8" font-family="JetBrains Mono, monospace" text-anchor="middle">
+          <rect x="6" y="60" width="48" height="40" rx="4" fill="#fde6d3"/><text x="30" y="84" fill="#b9531a">hdr.ts</text>
+          <rect x="58" y="60" width="48" height="40" rx="4" fill="#fde6d3"/><text x="82" y="84" fill="#b9531a">hdr.cust</text>
+          <rect x="110" y="60" width="48" height="40" rx="4" fill="#fde6d3"/><text x="134" y="84" fill="#b9531a">dev.os</text>
+          <rect x="162" y="60" width="48" height="40" rx="4" fill="#e6e5f6"/><text x="186" y="84" fill="#5a58a8">it.sku</text>
+          <rect x="214" y="60" width="50" height="40" rx="4" fill="#e6e5f6"/><text x="239" y="84" fill="#5a58a8">it.qty</text>
+        </g>
+        <text x="6" y="118" font-size="10" fill="#6d625a">one Parquet column chunk per leaf</text>
+        <text x="6" y="130" font-size="10" fill="#2f7d5a" font-weight="600">flattening 1:1 parts gains nothing</text>
+      </svg>
+      <p>Struct fields can be <b>clustering keys</b> with dot notation. Only <b>arrays</b> need a decision.</p>
+    </div>
+
+    <div class="mech">
+      <h3><i>B</i>Arrays can't drive skipping</h3>
+      <svg viewBox="0 0 270 132" width="100%" role="img" aria-label="Nested files each span all SKUs so a SKU filter reads all files; exploded files clustered by SKU span narrow ranges so one file is read">
+        <text x="6" y="12" font-size="10.5" font-weight="700" fill="#6d625a">Nested: 50 SKUs per row</text>
+        <g fill="#efeee9" stroke="#c9c2b4"><rect x="20" y="18" width="232" height="8" rx="3"/><rect x="20" y="30" width="232" height="8" rx="3"/><rect x="20" y="42" width="232" height="8" rx="3"/></g>
+        <text x="262" y="12" text-anchor="end" font-size="10" font-weight="700" fill="#b8402f">read 3/3</text>
+        <text x="6" y="70" font-size="10.5" font-weight="700" fill="#b9531a">Exploded, CLUSTER BY sku</text>
+        <rect x="20" y="76" width="74" height="8" rx="3" fill="#fde6d3" stroke="#e8742a"/>
+        <rect x="98" y="88" width="74" height="8" rx="3" fill="#f3ece3" stroke="#e6d9ca"/>
+        <rect x="176" y="100" width="76" height="8" rx="3" fill="#f3ece3" stroke="#e6d9ca"/>
+        <text x="262" y="70" text-anchor="end" font-size="10" font-weight="700" fill="#2f7d5a">read 1/3</text>
+        <path d="M50 14V112" stroke="#b8402f" stroke-width="1.6" stroke-dasharray="4 3"/>
+        <text x="50" y="126" text-anchor="middle" font-size="9.5" font-family="JetBrains Mono, monospace" fill="#b8402f">sku = 's7'</text>
+        <text x="252" y="126" text-anchor="end" font-size="9.5" fill="#6d625a">sku range →</text>
+      </svg>
+      <p>Array and map <b>elements can't be clustering keys</b>, so per-file min/max spans everything.</p>
+    </div>
+
+    <div class="mech">
+      <h3><i>C</i>Each entity is a new table to run</h3>
+      <svg viewBox="0 0 270 132" width="100%" role="img" aria-label="One event row explodes to fifty child rows; each entity table adds write sort, OPTIMIZE, stats and a checkpoint">
+        <defs><marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#b9531a"/></marker></defs>
+        <rect x="6" y="40" width="58" height="26" rx="5" fill="#fde6d3" stroke="#e8742a"/><text x="35" y="57" text-anchor="middle" font-size="10.5" font-weight="600" fill="#b9531a">1 event</text>
+        <path d="M66 53H92" stroke="#b9531a" stroke-width="1.8" marker-end="url(#a3)"/>
+        <text x="79" y="36" text-anchor="middle" font-size="9" fill="#6d625a">explode</text>
+        <g fill="#e6e5f6" stroke="#5a58a8"><rect x="96" y="20" width="56" height="10" rx="2"/><rect x="96" y="33" width="56" height="10" rx="2"/><rect x="96" y="46" width="56" height="10" rx="2"/><rect x="96" y="59" width="56" height="10" rx="2"/><rect x="96" y="72" width="56" height="10" rx="2"/></g>
+        <text x="124" y="96" text-anchor="middle" font-size="10" font-weight="600" fill="#5a58a8">50 rows</text>
+        <g font-size="9.3" fill="#2b2420">
+          <text x="160" y="26">+ explode + sort</text>
+          <text x="160" y="42">+ OPTIMIZE / VACUUM</text>
+          <text x="160" y="58">+ stats to manage</text>
+          <text x="160" y="74">+ checkpoint</text>
+          <text x="160" y="90">+ schema evolution</text>
+        </g>
+        <text x="6" y="116" font-size="10" fill="#6d625a">parent keys repeat, but compress well when clustered</text>
+        <text x="6" y="129" font-size="10" fill="#b8402f" font-weight="600">× 10–20 entities = the real cost</text>
+      </svg>
+      <p>Storage is the <b>smallest</b> part. Explode where reads pay back the <b>ops</b>.</p>
+    </div>
+
+    <div class="mech">
+      <h3><i>D</i>Fan-out: per sink or foreachBatch</h3>
+      <svg viewBox="0 0 270 132" width="100%" role="img" aria-label="Left: silver event feeds three streams with three checkpoints. Right: one foreachBatch stream writes three tables using txnAppId and txnVersion">
+        <defs><marker id="a5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#5a58a8"/></marker></defs>
+        <text x="64" y="12" text-anchor="middle" font-size="10.5" font-weight="700" fill="#2f7d5a">stream per sink</text>
+        <rect x="6" y="44" width="34" height="26" rx="4" fill="#fde6d3" stroke="#e8742a"/><text x="23" y="61" text-anchor="middle" font-size="9" fill="#b9531a">evt</text>
+        <g stroke="#5a58a8" stroke-width="1.4" fill="none"><path d="M40 52L86 26" marker-end="url(#a5)"/><path d="M40 57H86" marker-end="url(#a5)"/><path d="M40 62L86 88" marker-end="url(#a5)"/></g>
+        <g fill="#e6e5f6" stroke="#5a58a8"><rect x="90" y="18" width="30" height="16" rx="3"/><rect x="90" y="49" width="30" height="16" rx="3"/><rect x="90" y="80" width="30" height="16" rx="3"/></g>
+        <text x="64" y="112" text-anchor="middle" font-size="9.5" fill="#6d625a">3 checkpoints · 3 reads</text>
+        <text x="64" y="125" text-anchor="middle" font-size="9.5" fill="#2f7d5a">failure isolated</text>
+        <path d="M134 8V128" stroke="#e6d9ca"/>
+        <text x="204" y="12" text-anchor="middle" font-size="10.5" font-weight="700" fill="#b9531a">foreachBatch</text>
+        <rect x="142" y="44" width="34" height="26" rx="4" fill="#fde6d3" stroke="#e8742a"/><text x="159" y="61" text-anchor="middle" font-size="9" fill="#b9531a">evt</text>
+        <rect x="186" y="44" width="22" height="26" rx="4" fill="#fff1c7" stroke="#e3c66a"/>
+        <path d="M176 57H184" stroke="#5a58a8" stroke-width="1.4"/>
+        <g stroke="#5a58a8" stroke-width="1.4" fill="none"><path d="M208 52L230 26" marker-end="url(#a5)"/><path d="M208 57H230" marker-end="url(#a5)"/><path d="M208 62L230 88" marker-end="url(#a5)"/></g>
+        <g fill="#e6e5f6" stroke="#5a58a8"><rect x="234" y="18" width="30" height="16" rx="3"/><rect x="234" y="49" width="30" height="16" rx="3"/><rect x="234" y="80" width="30" height="16" rx="3"/></g>
+        <text x="204" y="112" text-anchor="middle" font-size="9.5" fill="#6d625a">1 read · txnAppId+txnVersion</text>
+        <text x="204" y="125" text-anchor="middle" font-size="9.5" fill="#b8402f">new chk → new txnAppId</text>
+      </svg>
+      <p>Docs recommend <b>one stream per sink</b>; foreachBatch "reduces parallelization".</p>
+    </div>
+
+    <div class="mech">
+      <h3><i>E</i>MV refresh: incremental or full</h3>
+      <svg viewBox="0 0 270 132" width="100%" role="img" aria-label="Materialized view refresh: cost analysis chooses incremental or full recompute; INCREMENTAL STRICT fails instead of falling back">
+        <rect x="6" y="8" width="104" height="30" rx="5" fill="#fff" stroke="#e6d9ca"/><text x="58" y="27" text-anchor="middle" font-size="10" font-weight="600" fill="#2b2420">REFRESH</text>
+        <path d="M110 23H130" stroke="#b9531a" stroke-width="1.6"/>
+        <rect x="132" y="8" width="132" height="30" rx="5" fill="#fff1c7" stroke="#e3c66a"/><text x="198" y="27" text-anchor="middle" font-size="10" font-weight="600" fill="#2b2420">cost analysis</text>
+        <rect x="132" y="48" width="132" height="24" rx="5" fill="#dcefe5" stroke="#2f7d5a"/><text x="198" y="64" text-anchor="middle" font-size="9.5" font-weight="600" fill="#2f7d5a">incremental: changed rows</text>
+        <rect x="132" y="78" width="132" height="24" rx="5" fill="#f8dcd8" stroke="#b8402f"/><text x="198" y="94" text-anchor="middle" font-size="9.5" font-weight="600" fill="#b8402f">FULL_RECOMPUTE</text>
+        <g font-size="9.5" fill="#2b2420"><text x="6" y="58">✓ row tracking</text><text x="6" y="72">✓ serverless</text><text x="6" y="86">✓ DECIMAL sums</text><text x="6" y="100" fill="#b8402f">? explode: not listed</text></g>
+        <text x="6" y="122" font-size="10" fill="#b9531a" font-weight="600">INCREMENTAL STRICT: fail, don't fall back</text>
+      </svg>
+      <p>Check <b>planning_information</b> in the event log for the technique used.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ROW 3 -->
+<div class="row r3">
+  <section class="panel p-violet">
+    <h2><span class="num">5</span>In code</h2>
+<pre><span class="k">CREATE TABLE</span> silver.entity_items
+<span class="k">CLUSTER BY</span> (event_date, sku)            <span class="c">-- child filters</span>
+<span class="k">TBLPROPERTIES</span> (<span class="s">'delta.enableRowTracking'</span>=<span class="s">'true'</span>);
+
+<span class="c">-- deterministic child key: (event_id, item_seq)</span>
+<span class="k">SELECT</span> e.event_id, e.event_date, item_seq,
+       item.sku, item.qty, item.price
+<span class="k">FROM</span> <span class="k">STREAM</span>(silver.event) e
+<span class="k">LATERAL VIEW</span> posexplode(e.items) t <span class="k">AS</span> item_seq, item;
+
+<span class="k">CREATE MATERIALIZED VIEW</span> gold.daily_sku_sales
+  <span class="k">REFRESH POLICY INCREMENTAL STRICT</span>
+  <span class="k">SCHEDULE EVERY</span> 1 <span class="k">HOUR</span>
+<span class="k">AS SELECT</span> event_date, sku,
+  <span class="k">SUM</span>(<span class="k">CAST</span>(qty*price <span class="k">AS DECIMAL</span>(18,2)))
+<span class="k">FROM</span> silver.entity_items <span class="k">GROUP BY ALL</span>;
+
+<span class="k">SELECT</span> `Category`, <span class="k">MEASURE</span>(`Revenue per Buyer`)
+<span class="k">FROM</span> gold.sales_metrics <span class="k">GROUP BY ALL</span>; <span class="c">-- metric view</span></pre>
+  </section>
+
+  <section class="panel p-red">
+    <h2><span class="num">6</span>Grain &amp; zero fault tolerance</h2>
+    <table class="grain">
+      <tr><th class="c1">Table</th><th class="c2">One row per</th><th class="c3">Key</th></tr>
+      <tr><td>bronze1/2</td><td>Kafka record</td><td>topic, partition, offset</td></tr>
+      <tr><td>silver.event</td><td>business event</td><td>event_id (dedupe once)</td></tr>
+      <tr><td>entity_items</td><td>item in an event</td><td>event_id, item_seq</td></tr>
+      <tr><td>gold agg MV</td><td>SKU per day</td><td>event_date, sku</td></tr>
+    </table>
+    <div class="ctl">
+      <div><b>Replay</b> from bronze1, not Kafka: retention is shorter than bug discovery</div>
+      <div><b>Reconcile</b> daily: SUM(size(items)) = COUNT(*) of entity table</div>
+      <div><b>Never</b> set ignoreMissingFiles: the docs say it gives wrong results</div>
+      <div><b>Aggregate</b> before joining two exploded entities: 50 × 10 = 500 rows/event</div>
+    </div>
+  </section>
+
+  <section class="panel p-green">
+    <h2><span class="num">7</span>Key takeaways</h2>
+    <ul class="take">
+      <li>Silver keeps <b>one validated row per event</b></li>
+      <li>1:1 structs stay nested: <b>already columnar</b></li>
+      <li>Explode arrays only for <b>child-grain filters, joins, aggregates</b></li>
+      <li>Liquid-cluster every table <b>by its own access pattern</b></li>
+      <li>Set <b>dataSkippingStatsColumns</b> with hundreds of columns</li>
+      <li>Gold: tables for dims, <b>MVs for aggregates</b>, <b>metric views</b> for measures</li>
+    </ul>
+    <div class="watch"><h3>Common mistakes</h3><ul>
+      <li>Exploding all 20 entities "just in case"</li>
+      <li>Deduping in more than one layer</li>
+      <li>FLOAT sums forcing full MV refreshes</li>
+      <li>Reusing txnAppId with a new checkpoint</li>
+    </ul></div>
+  </section>
+</div>
+
+<footer>
+  <div class="f1"><b>Rule of thumb:</b> nested 1:1 silver is the record. Explode an array only when queries filter, join or aggregate on its children.</div>
+  <div class="f2"><b>Verify:</b> files pruned on top queries · daily reconciliation · MV technique in planning_information.</div>
+</footer>
+
+</body>
+</html>
